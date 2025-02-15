@@ -1,0 +1,7 @@
+node_modules
+tsconfig.temp.json
+dist
+*.tsbuildinfo
+.vscode/*.code-snippets
+.env
+*.local.*
