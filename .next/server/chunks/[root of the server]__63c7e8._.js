@@ -167,7 +167,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$ai$2d$sdk$
 const openaiModel = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$ai$2d$sdk$2f$openai$2f$dist$2f$index$2e$mjs__$5b$app$2d$route$5d$__$28$ecmascript$29$__["openai"])("gpt-3.5-turbo");
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const googleModel = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$ai$2d$sdk$2f$google$2f$dist$2f$index$2e$mjs__$5b$app$2d$route$5d$__$28$ecmascript$29$__["google"])("gemini-1.5-flash");
-const chatModel = googleModel;
+const chatModel = openaiModel;
 }}),
 "[project]/src/app/api/chat/route.ts [app-route] (ecmascript)": ((__turbopack_context__) => {
 "use strict";
