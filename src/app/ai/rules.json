@@ -1,0 +1,62 @@
+[
+    {
+        "id": "no-console",
+        "description": "Avoid using console.log in production code.",
+        "pattern": "console.log",
+        "suggestion": "Consider using a logging library instead. Example: Winston or Pino for structured logging."
+    },
+    {
+        "id": "prefer-const-over-let",
+        "description": "Prefer 'const' over 'let' when the variable is not reassigned.",
+        "pattern": "let ",
+        "suggestion": "Use 'const' instead of 'let' to avoid unintentional reassignments."
+    },
+    {
+        "id": "use-template-literals",
+        "description": "Use template literals instead of string concatenation.",
+        "pattern": "'.*' \\+ .* \\+ '.*'",
+        "suggestion": "Consider using template literals for better readability and performance. Example: `Hello, ${user.name}!`"
+    },
+    {
+        "id": "avoid-any-typing",
+        "description": "Avoid using 'any' for typing.",
+        "pattern": ": any",
+        "suggestion": "Use specific types instead of 'any' to improve type safety and code maintainability."
+    },
+    {
+        "id": "no-errors-schema",
+        "description": "Avoid using NO_ERRORS_SCHEMA in Angular tests.",
+        "pattern": "NO_ERRORS_SCHEMA",
+        "suggestion": "Prefer CUSTOM_ELEMENTS_SCHEMA to allow only valid custom elements and ensure cleaner, safer code."
+    },
+    {
+        "id": "remove-unused-imports",
+        "description": "Remove unused imports from the codebase.",
+        "pattern": "import .*;",
+        "suggestion": "Ensure that all imported modules are being used in the code to avoid unnecessary clutter."
+    },
+    {
+        "id": "follow-aaa-pattern",
+        "description": "Follow the Arrange-Act-Assert pattern in unit tests.",
+        "pattern": "it\\(.*\\{.*\\}",
+        "suggestion": "Structure your tests with clear Arrange, Act, and Assert steps for readability and maintainability."
+    },
+    {
+        "id": "use-optional-chaining",
+        "description": "Use optional chaining to simplify null/undefined checks.",
+        "pattern": "if\\s*\\(.*&&.*\\)",
+        "suggestion": "Consider using optional chaining (?.) to reduce nesting and improve code readability."
+    },
+    {
+        "id": "avoid-direct-http",
+        "description": "Avoid making direct HTTP requests; prefer using SDKs.",
+        "pattern": "http\\.get\\(.*\\)",
+        "suggestion": "Use SDKs where available to abstract API interactions and improve maintainability."
+    },
+    {
+        "id": "remove-fixture-detect-changes",
+        "description": "Remove unnecessary calls to fixture.detectChanges in Angular tests.",
+        "pattern": "fixture.detectChanges\\(\\)",
+        "suggestion": "Only call fixture.detectChanges when necessary to reduce test runtime."
+    }
+]
