@@ -123,9 +123,14 @@
 "use client";
 
 import TaskCard from "./components/target";
+import ChatInterface from "./components/chat-interface";
 
 export default function Page() {
-  return <TaskCard />;
+  return (
+    <ChatInterface>
+      <TaskCard />
+    </ChatInterface>
+  );
 }
 
 // import { useChat } from "ai/react";
