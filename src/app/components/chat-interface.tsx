@@ -5,12 +5,12 @@ import { Menu, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { useChat } from "ai/react";
 import { Stock } from "./stock";
 import { ReviewTarget } from "./review-target";
 import TableData from "./table-data";
 import { useChatContext } from "../context/chat-context";
+import { TextareaAutosize } from "@mui/material";
 
 export default function ChatInterface({
   children,
@@ -188,7 +188,7 @@ export default function ChatInterface({
 
         {/* Input Area */}
         <form onSubmit={handleChatSubmit} className="border-t p-4 flex gap-2">
-          <Input
+          <TextareaAutosize
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Write what you want..."
