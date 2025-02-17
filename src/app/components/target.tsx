@@ -4,7 +4,8 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider/L
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { useState, useRef, useEffect } from "react";
 import { X, ChevronDown } from "lucide-react";
-import { Dayjs } from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
+import { useChatContext } from "../context/chat-context";
 
 // Función auxiliar para generar colores aleatorios pastel
 const getRandomPastelColor = () => {
@@ -77,6 +78,7 @@ interface TicketData {
 }
 
 export default function TaskCard() {
+  const { chatData } = useChatContext();
   const [tags, setTags] = useState([
     {
       id: 1,
@@ -98,6 +100,10 @@ export default function TaskCard() {
   const [priority, setPriority] = useState<Priority>("Medium");
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
   const [dueDate, setDueDate] = useState<Dayjs | null>(null);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [requirements, setRequirements] = useState("");
+  const [reproductionSteps, setReproductionSteps] = useState("");
   const [mounted, setMounted] = useState(false);
 
   // Referencias para los textareas
@@ -109,6 +115,39 @@ export default function TaskCard() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Usar los datos del chat para actualizar la tarjeta
+  useEffect(() => {
+    if (chatData && chatData.result) {
+      const {
+        title,
+        description,
+        requirements,
+        reproductionSteps,
+        limitDate,
+        priority,
+        labels,
+      } = chatData.result;
+
+      // Usar funciones de actualización de estado para evitar problemas de sincronización
+      setTitle((prev) => title || prev);
+      setDescription((prev) => description || prev);
+      setRequirements((prev) => requirements || prev);
+      setReproductionSteps((prev) => reproductionSteps || prev);
+      setDueDate((prev) => (limitDate ? dayjs(limitDate) : prev));
+      setPriority((prev) => (priority as Priority) || prev);
+
+      if (labels && labels.length > 0) {
+        setTags(
+          labels.map((label: string, index: number) => ({
+            id: index,
+            text: label,
+            colors: getRandomPastelColor(),
+          }))
+        );
+      }
+    }
+  }, [chatData]); // Solo depender de chatData
 
   // Si no está montado, no renderizar nada o mostrar un placeholder
   if (!mounted) {
@@ -152,9 +191,7 @@ export default function TaskCard() {
   return (
     <Card className="w-full max-w-4xl">
       <CardHeader>
-        <CardTitle className="text-xl font-bold">
-          Añadir funcionalidad a Rebalance Dashboard
-        </CardTitle>
+        <CardTitle className="text-xl font-bold">{title}</CardTitle>
       </CardHeader>
       <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6">
@@ -163,7 +200,7 @@ export default function TaskCard() {
             <textarea
               ref={descriptionRef}
               className="text-muted-foreground border border-dashed border-muted-foreground/25 rounded-lg p-4 w-full"
-              defaultValue="We have had feedback from a client that they find it frustrating that they add properties to the instrument grid then when they open the create or edit instrument modals they have to go through a process of adding those same properties again."
+              defaultValue={description}
             />
           </div>
 
@@ -172,7 +209,7 @@ export default function TaskCard() {
             <textarea
               ref={requirementsRef}
               className="border border-dashed border-muted-foreground/25 rounded-lg p-4 w-full"
-              defaultValue="The properties do not appear in the create or edit dialog by default"
+              defaultValue={requirements}
             />
           </div>
 
@@ -181,6 +218,7 @@ export default function TaskCard() {
             <textarea
               ref={reproductionStepsRef}
               className="border border-dashed border-muted-foreground/25 rounded-lg p-4 w-full"
+              defaultValue={reproductionSteps}
             />
           </div>
         </div>
