@@ -1,18 +1,14 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import TaskCard from "./components/target";
-import ChatInterface from "./components/chat-interface";
-import { ChatProvider } from "./context/chat-context";
-
-export default function Page() {
-  return (
-    <ChatProvider>
-      <ChatInterface>
-        <TaskCard />
-      </ChatInterface>
-    </ChatProvider>
-  );
+export default function Home() {
+  redirect("/review");
 }
+
+// ("use client");
+
+// import TaskCard from "./components/target";
+// import ChatInterface from "./components/chat-interface";
+// import { ChatProvider } from "./context/chat-context";
 
 // import { useChat } from "ai/react";
 // import { Stock } from "./components/stock";

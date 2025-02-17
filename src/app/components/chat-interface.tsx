@@ -11,6 +11,7 @@ import { ReviewTarget } from "./review-target";
 import TableData from "./table-data";
 import { useChatContext } from "../context/chat-context";
 import { TextareaAutosize } from "@mui/material";
+import { useRouter } from "next/navigation";
 
 export default function ChatInterface({
   children,
@@ -63,16 +64,18 @@ export default function ChatInterface({
   // const [input, setInput] = React.useState("");
 
   const menuItems = [
-    { text: "review", onClick: () => {} },
-    { text: "define", onClick: () => {} },
-    { text: "analyze", onClick: () => {} },
-    { text: "organize my day", onClick: () => {} },
+    { text: "review", route: "/review" },
+    { text: "define", route: "/define" },
+    { text: "analyze", route: "/analyze" },
+    { text: "organize", route: "/organize" },
   ];
 
   const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await handleSubmit(e);
   };
+
+  const router = useRouter();
 
   return (
     <div className="flex h-screen bg-background">
@@ -103,7 +106,7 @@ export default function ChatInterface({
               "w-full justify-start normal-case text-base",
               isMenuCollapsed && "px-2"
             )}
-            onClick={item.onClick}
+            onClick={() => router.push(item.route)}
           >
             {isMenuCollapsed ? item.text.charAt(0).toUpperCase() : item.text}
           </Button>
