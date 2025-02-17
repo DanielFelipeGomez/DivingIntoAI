@@ -6,17 +6,61 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useChat } from "ai/react";
+import { Stock } from "./stock";
+import { ReviewTarget } from "./review-target";
+import TableData from "./table-data";
+import { useChatContext } from "../context/chat-context";
 
 export default function ChatInterface({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { updateChatData } = useChatContext();
+  const { messages, input, setInput, handleSubmit } = useChat({
+    onError: (error) => {
+      console.error("Error en el chat:", error);
+    },
+  });
+
+  // Añadimos una referencia para evitar actualizaciones innecesarias
+  const lastProcessedMessage = React.useRef("");
+
+  React.useEffect(() => {
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+
+      // Solo procesar si es un mensaje nuevo
+      if (lastMessage.id !== lastProcessedMessage.current) {
+        lastProcessedMessage.current = lastMessage.id;
+
+        const targetDataMessage = messages
+          .slice()
+          .reverse()
+          .find((message) =>
+            message?.toolInvocations?.some(
+              (tool) => tool.toolName === "getTargetData"
+            )
+          );
+
+        if (targetDataMessage) {
+          const tool = targetDataMessage.toolInvocations?.find(
+            (tool) => tool.toolName === "getTargetData"
+          );
+          if (tool) {
+            updateChatData(tool);
+          }
+        }
+      }
+    }
+  }, [messages, updateChatData]);
+
   const [isMenuCollapsed, setIsMenuCollapsed] = React.useState(false);
-  const [messages, setMessages] = React.useState<
-    { text: string; sender: "ai" | "user" }[]
-  >([{ text: "I'll show you what you want", sender: "ai" }]);
-  const [input, setInput] = React.useState("");
+  // const [messages, setMessages] = React.useState<
+  //   { text: string; sender: "ai" | "user" }[]
+  // >([{ text: "I'll show you what you want", sender: "ai" }]);
+  // const [input, setInput] = React.useState("");
 
   const menuItems = [
     { text: "review", onClick: () => {} },
@@ -25,12 +69,9 @@ export default function ChatInterface({
     { text: "organize my day", onClick: () => {} },
   ];
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (input.trim()) {
-      setMessages([...messages, { text: input, sender: "user" }]);
-      setInput("");
-    }
+    await handleSubmit(e);
   };
 
   return (
@@ -84,20 +125,59 @@ export default function ChatInterface({
         {/* Messages */}
         <div className="flex-1 p-4 overflow-auto">
           <div className="space-y-4">
-            {messages.map((message, index) => (
-              <div key={index} className="flex items-start gap-2">
-                {message.sender === "ai" ? (
-                  <>
-                    <div className="h-6 w-6 rounded-full bg-pink-200 flex-shrink-0" />
-                    <span className="font-medium mr-2">AI</span>
-                    <Card className="p-3 bg-muted">{message.text}</Card>
-                  </>
+            {messages.map((message) => (
+              <div key={message.id} className="flex items-start gap-2">
+                {message.role !== "user" ? (
+                  !message.toolInvocations ? (
+                    <Card className="p-3 bg-muted">{message.content}</Card>
+                  ) : (
+                    <>
+                      <div className="h-6 w-6 rounded-full bg-pink-200 flex-shrink-0" />
+                      <span className="font-medium mr-2">AI</span>
+
+                      <div>
+                        {message.toolInvocations?.map((toolInvocation) => {
+                          const { toolName, toolCallId, state } =
+                            toolInvocation;
+
+                          if (state === "result") {
+                            if (toolName === "getStockPrice") {
+                              const { result } = toolInvocation;
+                              return <Stock key={toolCallId} {...result} />;
+                            } else if (toolName === "codeLint") {
+                              const { result } = toolInvocation;
+                              return (
+                                <ReviewTarget key={toolCallId} {...result} />
+                              );
+                            } else if (toolName === "getMockTableData") {
+                              const { result } = toolInvocation;
+                              return <TableData key={toolCallId} {...result} />;
+                            }
+                          } else {
+                            return (
+                              <div key={toolCallId}>
+                                {toolName === "displayWeather" ? (
+                                  <div>Loading weather...</div>
+                                ) : toolName === "codeLint" ? (
+                                  <div>Loading review code...</div>
+                                ) : toolName === "getMockTableData" ? (
+                                  <div>Loading table data...</div>
+                                ) : (
+                                  <div>Loading...</div>
+                                )}
+                              </div>
+                            );
+                          }
+                        })}
+                      </div>
+                    </>
+                  )
                 ) : (
                   <div className="flex items-start gap-2 ml-auto">
                     <Card className="p-3 bg-blue-500 text-white">
-                      {message.text}
+                      {message.content}
                     </Card>
-                    <span className="font-medium mr-2">Me</span>
+                    <span className="font-medium mr-2">{message.role}</span>
                     <div className="h-6 w-6 rounded-full bg-pink-200 flex-shrink-0" />
                   </div>
                 )}
@@ -107,7 +187,7 @@ export default function ChatInterface({
         </div>
 
         {/* Input Area */}
-        <form onSubmit={handleSend} className="border-t p-4 flex gap-2">
+        <form onSubmit={handleChatSubmit} className="border-t p-4 flex gap-2">
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
