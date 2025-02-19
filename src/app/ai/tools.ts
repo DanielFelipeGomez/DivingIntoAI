@@ -129,7 +129,7 @@ export const getTargetData = createTool({
     limitDate: z
       .string()
       .describe(
-        "Limit date of the ticket in base to the initial information given"
+        "Limit date of the ticket in base to the initial information given (format: YYYY-MM-DD)"
       ),
     priority: z
       .enum(["Highest", "High", "Medium", "Low", "Lowest"])
