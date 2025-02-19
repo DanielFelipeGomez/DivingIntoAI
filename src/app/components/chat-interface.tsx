@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import * as React from "react";
@@ -9,16 +10,39 @@ import { useChat } from "ai/react";
 import { Stock } from "./stock";
 import { ReviewTarget } from "./review-target";
 import TableData from "./table-data";
-import { ChatData, useChatContext } from "../context/chat-context";
 import { TextareaAutosize } from "@mui/material";
 import { useRouter } from "next/navigation";
+
+export interface ChatData {
+  result: {
+    title: string;
+    description: string;
+    requirements: string;
+    reproductionSteps: string;
+    limitDate: string;
+    priority: string;
+    labels: string[];
+  };
+}
 
 export default function ChatInterface({
   children,
 }: {
-  children: React.ReactNode;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  children: React.ReactElement<any>;
 }) {
-  const { updateChatData } = useChatContext();
+  const [params, setParams] = React.useState<ChatData>({
+    result: {
+      title: "",
+      description: "",
+      requirements: "",
+      reproductionSteps: "",
+      limitDate: "",
+      priority: "",
+      labels: [],
+    },
+  });
+
   const { messages, input, setInput, handleSubmit } = useChat({
     onError: (error) => {
       console.error("Error en el chat:", error);
@@ -50,12 +74,12 @@ export default function ChatInterface({
             (tool) => tool.toolName === "getTargetData"
           );
           if (tool) {
-            updateChatData(tool as unknown as ChatData);
+            setParams(tool as unknown as ChatData);
           }
         }
       }
     }
-  }, [messages, updateChatData]);
+  }, [messages, setParams]);
 
   const [isMenuCollapsed, setIsMenuCollapsed] = React.useState(false);
   // const [messages, setMessages] = React.useState<
@@ -114,7 +138,10 @@ export default function ChatInterface({
       </div>
 
       {/* Middle Content Area */}
-      <div className="flex-1 border-r p-4">{children}</div>
+      <div className="flex-1 border-r p-4">
+        {React.isValidElement(children) &&
+          React.cloneElement<any>(children, { params })}
+      </div>
 
       {/* Chat Area */}
       <div className="w-[400px] flex flex-col">

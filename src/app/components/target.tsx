@@ -5,7 +5,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { useState, useRef, useEffect } from "react";
 import { X, ChevronDown } from "lucide-react";
 import dayjs, { Dayjs } from "dayjs";
-import { useChatContext } from "../context/chat-context";
+import { ChatData } from "./chat-interface";
 
 // Función auxiliar para generar colores aleatorios pastel
 const getRandomPastelColor = () => {
@@ -77,8 +77,7 @@ interface TicketData {
   }>;
 }
 
-export default function TaskCard() {
-  const { chatData } = useChatContext();
+export default function TaskCard({ params }: { params?: ChatData }) {
   const [tags, setTags] = useState([
     {
       id: 1,
@@ -118,7 +117,7 @@ export default function TaskCard() {
 
   // Usar los datos del chat para actualizar la tarjeta
   useEffect(() => {
-    if (chatData && chatData.result) {
+    if (params && params.result) {
       const {
         title,
         description,
@@ -127,7 +126,7 @@ export default function TaskCard() {
         limitDate,
         priority,
         labels,
-      } = chatData.result;
+      } = params.result;
 
       // Usar funciones de actualización de estado para evitar problemas de sincronización
       setTitle((prev) => title || prev);
@@ -147,7 +146,7 @@ export default function TaskCard() {
         );
       }
     }
-  }, [chatData]); // Solo depender de chatData
+  }, [params]); // Solo depender de chatData
 
   // Si no está montado, no renderizar nada o mostrar un placeholder
   if (!mounted) {
