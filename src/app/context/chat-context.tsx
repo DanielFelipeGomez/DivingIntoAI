@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, ReactNode } from "react";
 
-interface ChatData {
+export interface ChatData {
   result: {
     title: string;
     description: string;

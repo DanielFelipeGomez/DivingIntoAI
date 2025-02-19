@@ -9,7 +9,7 @@ import { useChat } from "ai/react";
 import { Stock } from "./stock";
 import { ReviewTarget } from "./review-target";
 import TableData from "./table-data";
-import { useChatContext } from "../context/chat-context";
+import { ChatData, useChatContext } from "../context/chat-context";
 import { TextareaAutosize } from "@mui/material";
 import { useRouter } from "next/navigation";
 
@@ -50,7 +50,7 @@ export default function ChatInterface({
             (tool) => tool.toolName === "getTargetData"
           );
           if (tool) {
-            updateChatData(tool);
+            updateChatData(tool as unknown as ChatData);
           }
         }
       }
