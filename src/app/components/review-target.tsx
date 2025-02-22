@@ -1,39 +1,69 @@
-interface ReviewTargetProps {
-  ruleId: string;
-  lineNumber: number;
-  lineContent: string;
-  suggestedFix: string;
+import { Check, Copy, X } from "lucide-react";
+import { Card } from "@/components/ui/card";
+
+export interface ReviewTargetProps {
+  codeBefore: string;
+  codeAfter: string;
+  explanation: string;
+  reference?: {
+    text: string;
+    url: string;
+  };
 }
 
-export const ReviewTarget = ({
-  ruleId,
-  lineNumber,
-  lineContent,
-  suggestedFix,
-}: ReviewTargetProps) => {
-  return (
-    <div className="p-4 bg-gray rounded-lg shadow-md border border-gray-200">
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-red-600">Error Rule:</span>
-          <span>{ruleId}</span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="font-semibold">Line Number:</span>
-          <span>{lineNumber}</span>
-        </div>
-
-        <div className="space-y-1">
-          <span className="font-semibold block">Code:</span>
-          <code className="block bg-red-900 p-2 rounded">{lineContent}</code>
-        </div>
-
-        <div className="space-y-1">
-          <span className="font-semibold block">Suggested Fix:</span>
-          <p className="text-white-700">{suggestedFix}</p>
+export default function ReviewTarget(props: ReviewTargetProps) {
+  console.log("params", props);
+  return props ? (
+    <Card className="w-full max-w-2xl">
+      <div className="divide-y divide-border">
+        <div className="p-4 space-y-4">
+          <div className="space-y-2">
+            <div className="bg-red-50 dark:bg-red-950/50 rounded-lg">
+              <div className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 font-medium border-b border-red-100 dark:border-red-900">
+                <X className="h-4 w-4" />
+                BEFORE
+              </div>
+              <pre className="p-4 text-sm font-mono whitespace-pre-wrap break-all">
+                {props.codeBefore}
+              </pre>
+            </div>
+            <div className="bg-green-50 dark:bg-green-950/50 rounded-lg">
+              <div className="flex items-center gap-2 px-4 py-2 text-sm text-green-600 dark:text-green-400 font-medium border-b border-green-100 dark:border-green-900">
+                <Check className="h-4 w-4" />
+                AFTER
+              </div>
+              <pre className="p-4 text-sm font-mono whitespace-pre-wrap break-all relative group">
+                {props.codeAfter}
+                <button
+                  onClick={() => navigator.clipboard.writeText(props.codeAfter)}
+                  className="absolute top-2 right-2 p-2 rounded-md opacity-0 group-hover:opacity-100 hover:bg-green-100 dark:hover:bg-green-900 transition-opacity"
+                  aria-label="Copy code"
+                >
+                  <Copy className="h-4 w-4" />
+                </button>
+              </pre>
+            </div>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            {props.explanation}
+          </div>
+          {props.reference && (
+            <div className="text-xs text-muted-foreground">
+              <span className="font-medium">Reference: </span>
+              <a
+                href={props.reference.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:underline text-primary"
+              >
+                {props.reference.text}
+              </a>
+            </div>
+          )}
         </div>
       </div>
-    </div>
+    </Card>
+  ) : (
+    <div>No params</div>
   );
-};
+}

@@ -12,7 +12,10 @@ export async function POST(request: Request) {
 
     const result = streamText({
       model: chatModel,
-      system: "You are a friendly assistant!",
+      system: `
+      You are a friendly assistant!
+      If the user ask for a code review, try to devide the code review in all the fragments that you consider are necessary but not more that 5 fragments.
+      `,
       messages,
       maxSteps: 5,
       tools,

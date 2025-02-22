@@ -8,21 +8,19 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useChat } from "ai/react";
 import { Stock } from "./stock";
-import { ReviewTarget } from "./review-target";
 import TableData from "./table-data";
 import { TextareaAutosize } from "@mui/material";
 import { useRouter } from "next/navigation";
+import { CodeReviewProps } from "./code-review";
 
 export interface ChatData {
-  result: {
-    title: string;
-    description: string;
-    requirements: string;
-    reproductionSteps: string;
-    limitDate: string;
-    priority: string;
-    labels: string[];
-  };
+  title: string;
+  description: string;
+  requirements: string;
+  reproductionSteps: string;
+  limitDate: string;
+  priority: string;
+  labels: string[];
 }
 
 export default function ChatInterface({
@@ -31,19 +29,14 @@ export default function ChatInterface({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   children: React.ReactElement<any>;
 }) {
-  const [params, setParams] = React.useState<ChatData>({
-    result: {
-      title: "",
-      description: "",
-      requirements: "",
-      reproductionSteps: "",
-      limitDate: "",
-      priority: "",
-      labels: [],
-    },
-  });
+  const [params, setParams] = React.useState<
+    ChatData | CodeReviewProps | undefined
+  >(undefined);
 
   const { messages, input, setInput, handleSubmit } = useChat({
+    onResponse: (response) => {
+      console.log("response", response);
+    },
     onError: (error) => {
       console.error("Error en el chat:", error);
     },
@@ -56,7 +49,6 @@ export default function ChatInterface({
     if (messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
 
-      // Solo procesar si es un mensaje nuevo
       if (lastMessage.id !== lastProcessedMessage.current) {
         lastProcessedMessage.current = lastMessage.id;
 
@@ -65,7 +57,18 @@ export default function ChatInterface({
           .reverse()
           .find((message) =>
             message?.toolInvocations?.some(
-              (tool) => tool.toolName === "getTargetData"
+              (tool) =>
+                tool.toolName === "getTargetData" && tool.state === "result"
+            )
+          );
+
+        const codeReviewMessage = messages
+          .slice()
+          .reverse()
+          .find((message) =>
+            message?.toolInvocations?.some(
+              (tool) =>
+                tool.toolName === "getCodeReviewData" && tool.state === "result"
             )
           );
 
@@ -77,9 +80,21 @@ export default function ChatInterface({
             setParams(tool as unknown as ChatData);
           }
         }
+
+        if (codeReviewMessage) {
+          const tool = codeReviewMessage.toolInvocations?.find(
+            (tool) => tool.toolName === "getCodeReviewData"
+          );
+          if (tool) {
+            console.log("tool", tool);
+            setParams(tool as unknown as CodeReviewProps);
+          }
+        }
       }
     }
   }, [messages, setParams]);
+
+  console.log("messages", messages);
 
   const [isMenuCollapsed, setIsMenuCollapsed] = React.useState(false);
   // const [messages, setMessages] = React.useState<
@@ -93,11 +108,6 @@ export default function ChatInterface({
     { text: "analyze", route: "/analyze" },
     { text: "organize", route: "/organize" },
   ];
-
-  const handleChatSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await handleSubmit(e);
-  };
 
   const router = useRouter();
 
@@ -174,11 +184,6 @@ export default function ChatInterface({
                             if (toolName === "getStockPrice") {
                               const { result } = toolInvocation;
                               return <Stock key={toolCallId} {...result} />;
-                            } else if (toolName === "codeLint") {
-                              const { result } = toolInvocation;
-                              return (
-                                <ReviewTarget key={toolCallId} {...result} />
-                              );
                             } else if (toolName === "getMockTableData") {
                               const { result } = toolInvocation;
                               return <TableData key={toolCallId} {...result} />;
@@ -188,8 +193,6 @@ export default function ChatInterface({
                               <div key={toolCallId}>
                                 {toolName === "displayWeather" ? (
                                   <div>Loading weather...</div>
-                                ) : toolName === "codeLint" ? (
-                                  <div>Loading review code...</div>
                                 ) : toolName === "getMockTableData" ? (
                                   <div>Loading table data...</div>
                                 ) : (
@@ -217,7 +220,7 @@ export default function ChatInterface({
         </div>
 
         {/* Input Area */}
-        <form onSubmit={handleChatSubmit} className="border-t p-4 flex gap-2">
+        <form onSubmit={handleSubmit} className="border-t p-4 flex gap-2">
           <TextareaAutosize
             value={input}
             onChange={(e) => setInput(e.target.value)}

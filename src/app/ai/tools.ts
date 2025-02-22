@@ -1,8 +1,6 @@
 import { openai } from "@ai-sdk/openai";
-import { tool as createTool, generateObject, generateText } from "ai";
+import { tool as createTool, generateText } from "ai";
 import { z } from "zod";
-
-import rules from "./rules.json";
 
 export const stockTool = createTool({
   description: "Get price for a stock",
@@ -17,52 +15,52 @@ export const stockTool = createTool({
   },
 });
 
-export const codeLintTool = createTool({
-  description: "Analyze code and return recommended rule corrections",
-  parameters: z.object({
-    code: z.string().describe("The source code to analyze"),
-  }),
-  execute: async function ({ code }) {
-    const prompt = `
-        Analyze the following JavaScript code and check it against these predefined rules:
-        ${rules
-          .map((rule) => `Rule: ${rule.id} - ${rule.description}`)
-          .join("\n")}
-        
-        Code to analyze:
-        \`\`\`js
-        ${code}
-        \`\`\`
-        
-        Provide a detailed JSON response with:
-        - The rule ID that was violated
-        - Line number of the issue
-        - Content of the problematic line
-        - Suggested fix based on the predefined rules
-        `;
+// export const codeLintTool = createTool({
+//   description: "Analyze code and return recommended rule corrections",
+//   parameters: z.object({
+//     code: z.string().describe("The source code to analyze"),
+//   }),
+//   execute: async function ({ code }) {
+//     const prompt = `
+//         Analyze the following JavaScript code and check it against these predefined rules:
+//         ${rules
+//           .map((rule) => `Rule: ${rule.id} - ${rule.description}`)
+//           .join("\n")}
 
-    const model = openai("gpt-3.5-turbo");
+//         Code to analyze:
+//         \`\`\`js
+//         ${code}
+//         \`\`\`
 
-    const schema = z.object({
-      ruleId: z.string().describe("The ID of the rule that was violated"),
-      lineNumber: z
-        .number()
-        .describe("The line number where the issue occurred"),
-      lineContent: z.string().describe("The content of the problematic line"),
-      suggestedFix: z
-        .string()
-        .describe("The suggested fix based on the predefined rules"),
-    });
+//         Provide a detailed JSON response with:
+//         - The rule ID that was violated
+//         - Line number of the issue
+//         - Content of the problematic line
+//         - Suggested fix based on the predefined rules
+//         `;
 
-    const { object } = await generateObject({
-      model,
-      prompt,
-      schema,
-    });
+//     const model = openai("gpt-3.5-turbo");
 
-    return object;
-  },
-});
+//     const schema = z.object({
+//       ruleId: z.string().describe("The ID of the rule that was violated"),
+//       lineNumber: z
+//         .number()
+//         .describe("The line number where the issue occurred"),
+//       lineContent: z.string().describe("The content of the problematic line"),
+//       suggestedFix: z
+//         .string()
+//         .describe("The suggested fix based on the predefined rules"),
+//     });
+
+//     const { object } = await generateObject({
+//       model,
+//       prompt,
+//       schema,
+//     });
+
+//     return object;
+//   },
+// });
 
 export const getMockTableData = createTool({
   description: "Generate mock data for a table based on a description",
@@ -163,9 +161,60 @@ export const getTargetData = createTool({
   },
 });
 
+export const getCodeReviewData = createTool({
+  description: "Receive a code review and return the data",
+  parameters: z.object({
+    codeReview: z.array(
+      z.object({
+        codeBefore: z
+          .string()
+          .describe("A fragment of the code before the proposed changes"),
+        codeAfter: z.string().describe("A fragment of the code proposed"),
+        explanation: z
+          .string()
+          .describe("The explanation of the proposed changes"),
+        reference: z.object({
+          text: z.string().describe("The text of the reference"),
+          url: z.string().describe("The URL of the reference"),
+        }),
+      })
+    ),
+  }),
+  // parameters: z.object({
+  //   codeBefore: z.string().describe("The code before the proposed changes"),
+  //   codeAfter: z.string().describe("The code proposed"),
+  //   explanation: z.string().describe("The explanation of the proposed changes"),
+  //   reference: z.object({
+  //     text: z.string().describe("The text of the reference"),
+  //     url: z.string().describe("The URL of the reference"),
+  //   }),
+  // }),
+  execute: async function (codeReview) {
+    console.log("HEYYYYYYYYYYYY QUE CODIGo", codeReview);
+    return codeReview.codeReview;
+  },
+});
+
+// export const getCodeReviewData = createTool({
+//   description: "Generate a code review in base to the code given",
+//   parameters: z.object({
+//     codeBefore: z.string().describe("The code before the proposed changes"),
+//     codeAfter: z.string().describe("The code proposed"),
+//     explanation: z.string().describe("The explanation of the proposed changes"),
+//     reference: z.object({
+//       text: z.string().describe("The text of the reference"),
+//       url: z.string().describe("The URL of the reference"),
+//     }),
+//   }),
+//   execute: async function ({ codeBefore, codeAfter, explanation, reference }) {
+//     console.log("code", codeBefore, codeAfter, explanation, reference);
+//     return { codeBefore, codeAfter, explanation, reference };
+//   },
+// });
+
 export const tools = {
+  getCodeReviewData,
   getStockPrice: stockTool,
-  codeLint: codeLintTool,
-  getMockTableData,
+  // codeLint: codeLintTool,
   getTargetData,
 };
