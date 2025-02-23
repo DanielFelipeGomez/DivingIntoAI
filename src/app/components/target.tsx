@@ -75,6 +75,7 @@ interface TicketData {
       text: string;
     };
   }>;
+  code: string;
 }
 
 export default function TaskCard({ params }: { params?: ChatData }) {
@@ -103,6 +104,7 @@ export default function TaskCard({ params }: { params?: ChatData }) {
   const [description, setDescription] = useState("");
   const [requirements, setRequirements] = useState("");
   const [reproductionSteps, setReproductionSteps] = useState("");
+  const [code, setCode] = useState("");
   const [mounted, setMounted] = useState(false);
 
   // Referencias para los textareas
@@ -117,7 +119,7 @@ export default function TaskCard({ params }: { params?: ChatData }) {
 
   // Usar los datos del chat para actualizar la tarjeta
   useEffect(() => {
-    if (params && params.result) {
+    if (params) {
       const {
         title,
         description,
@@ -126,7 +128,7 @@ export default function TaskCard({ params }: { params?: ChatData }) {
         limitDate,
         priority,
         labels,
-      } = params.result;
+      } = params;
 
       // Usar funciones de actualización de estado para evitar problemas de sincronización
       setTitle((prev) => title || prev);
@@ -175,20 +177,21 @@ export default function TaskCard({ params }: { params?: ChatData }) {
 
   const handleSave = () => {
     const ticketData: TicketData = {
-      title: "Añadir funcionalidad a Rebalance Dashboard",
+      title: "Add functionality to Rebalance Dashboard",
       description: descriptionRef.current?.value || "",
       requirements: requirementsRef.current?.value || "",
       reproductionSteps: reproductionStepsRef.current?.value || "",
       dueDate: dueDate?.toDate() || null,
       priority,
       tags,
+      code,
     };
 
     console.log(JSON.stringify(ticketData, null, 2));
   };
 
   return (
-    <Card className="w-full max-w-4xl">
+    <Card className="w-full">
       <CardHeader>
         <CardTitle className="text-xl font-bold">{title}</CardTitle>
       </CardHeader>
@@ -198,8 +201,9 @@ export default function TaskCard({ params }: { params?: ChatData }) {
             <h3 className="text-lg font-semibold">Description</h3>
             <textarea
               ref={descriptionRef}
-              className="text-muted-foreground border border-dashed border-muted-foreground/25 rounded-lg p-4 w-full"
+              className=" border border-dashed border-muted-foreground/25 rounded-lg p-4 w-full"
               defaultValue={description}
+              placeholder="Enter a detailed description..."
             />
           </div>
 
@@ -209,27 +213,53 @@ export default function TaskCard({ params }: { params?: ChatData }) {
               ref={requirementsRef}
               className="border border-dashed border-muted-foreground/25 rounded-lg p-4 w-full"
               defaultValue={requirements}
+              placeholder="List the requirements..."
             />
           </div>
 
           <div className="space-y-2">
-            <h3 className="text-lg font-semibold">How to reproduce it</h3>
+            <h3 className="text-lg font-semibold">How to Reproduce</h3>
             <textarea
               ref={reproductionStepsRef}
               className="border border-dashed border-muted-foreground/25 rounded-lg p-4 w-full"
               defaultValue={reproductionSteps}
+              placeholder="Describe the steps to reproduce..."
             />
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold">Code</h3>
+            <div className="relative flex border border-dashed border-muted-foreground/25 rounded-lg bg-gray-50">
+              <div
+                className="py-4 px-2 text-right text-gray-500 bg-gray-100 select-none"
+                style={{ minWidth: "3rem" }}
+              >
+                {code.split("\n").map((_, i) => (
+                  <div key={i + 1} className="leading-6">
+                    {i + 1}
+                  </div>
+                ))}
+              </div>
+              <textarea
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                className="font-mono text-sm p-4 w-full min-h-[200px] bg-transparent resize-none leading-6 focus:outline-none"
+                placeholder="Enter your code here..."
+                style={{ lineHeight: "1.5rem" }}
+              />
+            </div>
           </div>
         </div>
 
         <div className="space-y-6">
           <div className="space-y-2">
-            <h3 className="text-lg font-semibold">Limite</h3>
+            <h3 className="text-lg font-semibold">Due Date</h3>
             <div className="flex items-center gap-2 text-muted-foreground">
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
-                  label="Fecha límite"
+                  label="Due Date"
                   value={dueDate}
+                  className="border border-dashed border-muted-foreground/25 rounded-lg p-4 w-full"
                   onChange={(newValue: Dayjs | null) => setDueDate(newValue)}
                   slotProps={{
                     textField: {
@@ -243,11 +273,11 @@ export default function TaskCard({ params }: { params?: ChatData }) {
           </div>
 
           <div className="space-y-2">
-            <h3 className="text-lg font-semibold">Prioridad</h3>
+            <h3 className="text-lg font-semibold">Priority</h3>
             <div className="relative">
               <button
                 onClick={() => setShowPriorityDropdown(!showPriorityDropdown)}
-                className="w-full flex items-center justify-between px-4 py-2 border rounded-lg hover:bg-gray-50"
+                className="w-full flex items-center justify-between px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
               >
                 <div className="flex items-center gap-2">
                   <div
