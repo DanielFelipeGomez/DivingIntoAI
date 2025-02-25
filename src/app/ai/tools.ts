@@ -134,6 +134,9 @@ export const getTargetData = createTool({
       .describe(
         "Priority of the ticket in base to the initial information given"
       ),
+    code: z
+      .string()
+      .describe("Code reference of the ticket if the user has provided it"),
     labels: z
       .array(z.string())
       .describe(

@@ -6,6 +6,7 @@ import { useState, useRef, useEffect } from "react";
 import { X, ChevronDown } from "lucide-react";
 import dayjs, { Dayjs } from "dayjs";
 import { ChatData } from "./chat-interface";
+import ReactMarkdown from "react-markdown";
 
 // Función auxiliar para generar colores aleatorios pastel
 const getRandomPastelColor = () => {
@@ -105,6 +106,7 @@ export default function TaskCard({ params }: { params?: ChatData }) {
   const [requirements, setRequirements] = useState("");
   const [reproductionSteps, setReproductionSteps] = useState("");
   const [code, setCode] = useState("");
+  const [editedCodeMode, setEditedCodeMode] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   // Referencias para los textareas
@@ -229,25 +231,23 @@ export default function TaskCard({ params }: { params?: ChatData }) {
 
           <div className="space-y-2">
             <h3 className="text-lg font-semibold">Code</h3>
-            <div className="relative flex border border-dashed border-muted-foreground/25 rounded-lg bg-gray-50">
-              <div
-                className="py-4 px-2 text-right text-gray-500 bg-gray-100 select-none"
-                style={{ minWidth: "3rem" }}
-              >
-                {code.split("\n").map((_, i) => (
-                  <div key={i + 1} className="leading-6">
-                    {i + 1}
-                  </div>
-                ))}
-              </div>
-              <textarea
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                className="font-mono text-sm p-4 w-full min-h-[200px] bg-transparent resize-none leading-6 focus:outline-none"
-                placeholder="Enter your code here..."
-                style={{ lineHeight: "1.5rem" }}
-              />
-            </div>
+            <button
+              onClick={() => setEditedCodeMode(!editedCodeMode)}
+              className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              {editedCodeMode ? "View" : "Edit"}
+            </button>
+            <Card className="p-4">
+              {editedCodeMode ? (
+                <textarea
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  style={{ width: "50%", height: "300px", fontSize: "16px" }}
+                />
+              ) : (
+                <ReactMarkdown>{code}</ReactMarkdown>
+              )}
+            </Card>
           </div>
         </div>
 
