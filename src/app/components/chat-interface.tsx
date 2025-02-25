@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
+import "regenerator-runtime/runtime";
 
 import * as React from "react";
 import {
   Menu,
-  Search,
+  Send,
   Copy,
   Check,
   ChevronLeft,
@@ -25,6 +26,7 @@ import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import remarkGfm from "remark-gfm";
 import "highlight.js/styles/github-dark.css";
+import Dictaphone from "./dictaphone";
 
 const CodeBlock = ({
   className,
@@ -425,8 +427,9 @@ export default function ChatInterface({
                     }
                   }}
                 />
+                <Dictaphone setInput={setInput} />
                 <Button type="submit" size="icon" variant="ghost">
-                  <Search className="h-4 w-4" />
+                  <Send className="h-4 w-4" />
                 </Button>
               </form>
             </>
