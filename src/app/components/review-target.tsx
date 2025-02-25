@@ -14,7 +14,7 @@ export interface ReviewTargetProps {
 export default function ReviewTarget(props: ReviewTargetProps) {
   console.log("params", props);
   return props ? (
-    <Card className="w-full max-w-2xl">
+    <Card className="w-full">
       <div className="divide-y divide-border">
         <div className="p-4 space-y-4">
           <div className="space-y-2">
