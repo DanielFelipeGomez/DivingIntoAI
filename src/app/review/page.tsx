@@ -1,12 +1,7 @@
 "use client";
 
-import ChatInterface from "../components/chat-interface";
-import CodeReview from "../components/code-review";
+import TicketsDashboard from "./dashboard";
 
 export default function ReviewPage() {
-  return (
-    <ChatInterface>
-      <CodeReview params={undefined} />
-    </ChatInterface>
-  );
+  return <TicketsDashboard />;
 }

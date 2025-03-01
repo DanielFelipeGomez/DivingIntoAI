@@ -14,6 +14,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Tools } from "../ai/tools.types";
+import { supabase } from "@/lib/supabase";
 
 // Función auxiliar para generar colores aleatorios pastel
 const getRandomPastelColor = () => {
@@ -184,7 +185,7 @@ export default function TaskCard({
     setTags(tags.filter((tag) => tag.id !== tagId));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const ticketData: TicketDataSaved = {
       title: "Add functionality to Rebalance Dashboard",
       description: descriptionRef.current?.value || "",
@@ -196,7 +197,34 @@ export default function TaskCard({
       code,
     };
 
-    console.log(JSON.stringify(ticketData, null, 2));
+    try {
+      const { data, error } = await supabase
+        .from("Tickets")
+        .insert([
+          {
+            description: ticketData.description,
+            requirenments: ticketData.requirements,
+            reproductionSteps: ticketData.reproductionSteps,
+            limitDate: ticketData.dueDate,
+            priority: ticketData.priority,
+            labels: ticketData.tags,
+          },
+        ])
+        .select();
+
+      if (error) {
+        console.error("Error al guardar el ticket:", error);
+        alert(
+          "Error al guardar el ticket. Consulta la consola para más detalles."
+        );
+      } else {
+        console.log("Ticket guardado exitosamente:", data);
+        alert("Ticket guardado exitosamente");
+      }
+    } catch (err) {
+      console.error("Error en la operación de guardado:", err);
+      alert("Error inesperado. Consulta la consola para más detalles.");
+    }
   };
 
   return (

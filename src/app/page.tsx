@@ -1,7 +1,7 @@
-import { redirect } from "next/navigation";
+import AuthPage from "./components/auth-page";
 
 export default function Home() {
-  redirect("/review");
+  return <AuthPage />;
 }
 
 // ("use client");

@@ -2,21 +2,11 @@
 import "regenerator-runtime/runtime";
 
 import * as React from "react";
-import {
-  Menu,
-  Send,
-  ChevronLeft,
-  ChevronRight,
-  FileEdit,
-  FileSearch,
-  X,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Send, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useChat } from "ai/react";
 import { TextareaAutosize } from "@mui/material";
-import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import remarkGfm from "remark-gfm";
@@ -52,8 +42,21 @@ interface ChildComponentProps {
 
 export default function ChatInterface({
   children,
+  inDialog = false,
+  dialogTitle = "Ask AI",
+  dialogHeaderHeight = 57, // Altura por defecto del header del diálogo
+  dialogFooterHeight = 65, // Altura por defecto del footer del diálogo
+  onDataChange,
 }: {
   children: React.ReactElement<ChildComponentProps>;
+  inDialog?: boolean;
+  dialogTitle?: string;
+  dialogHeaderHeight?: number;
+  dialogFooterHeight?: number;
+  onDataChange?: (data: {
+    params: modelDataResult | undefined;
+    contextForModel: Set<string>;
+  }) => void;
 }) {
   const [params, setParams] = React.useState<modelDataResult | undefined>(
     undefined
@@ -64,6 +67,8 @@ export default function ChatInterface({
   const [chatWidth, setChatWidth] = React.useState(400);
   const [isResizing, setIsResizing] = React.useState(false);
   const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const contextAreaRef = React.useRef<HTMLDivElement>(null);
+  const chatContainerRef = React.useRef<HTMLDivElement>(null);
 
   const { messages, input, setInput, handleSubmit } = useChat({
     onResponse: (response) => {
@@ -128,6 +133,26 @@ export default function ChatInterface({
     }
   }, [messages, setParams]);
 
+  // Efecto para actualizar la altura del área de contexto y adaptarse al contenedor padre
+  React.useEffect(() => {
+    const updateContextHeight = () => {
+      if (contextAreaRef.current) {
+        document.documentElement.style.setProperty(
+          "--context-height",
+          `${contextAreaRef.current.offsetHeight}px`
+        );
+      } else {
+        document.documentElement.style.setProperty("--context-height", "0px");
+      }
+    };
+
+    // Actualizar altura cuando cambia el contexto
+    updateContextHeight();
+
+    // También actualizar en la próxima renderización para capturar cualquier cambio de tamaño
+    requestAnimationFrame(updateContextHeight);
+  }, [contextForModel.size]);
+
   // Resizer logic
   const startResizing = React.useCallback((e: React.MouseEvent) => {
     setIsResizing(true);
@@ -163,101 +188,112 @@ export default function ChatInterface({
     };
   }, [isResizing]);
 
-  const [isMenuCollapsed, setIsMenuCollapsed] = React.useState(true);
+  // Efecto específico para ajustar el comportamiento de scroll en el diálogo
+  React.useEffect(() => {
+    if (inDialog && chatContainerRef.current) {
+      // Forzar que no haya scroll en el diálogo o sus contenedores padres
+      const applyNoScrollToParents = () => {
+        if (!chatContainerRef.current) return;
 
-  const menuItems = [
-    {
-      text: "Define",
-      route: "/define",
-      icon: <FileEdit className="h-5 w-5" />,
-    },
-    {
-      text: "Review",
-      route: "/review",
-      icon: <FileSearch className="h-5 w-5" />,
-    },
-  ];
+        // Aplicar al contenedor del chat
+        chatContainerRef.current.style.overflow = "hidden";
 
-  const router = useRouter();
+        // Aplicar a los padres hasta el body
+        let parent = chatContainerRef.current.parentElement;
+        while (parent && parent !== document.body) {
+          parent.style.overflow = "hidden";
+          if (parent.parentElement) {
+            parent = parent.parentElement;
+          } else {
+            break;
+          }
+        }
+      };
+
+      // Aplicar inmediatamente
+      applyNoScrollToParents();
+
+      // Y también después de un pequeño retraso para asegurar que se aplica después de cualquier renderizado
+      const timeoutId = setTimeout(applyNoScrollToParents, 100);
+
+      return () => {
+        clearTimeout(timeoutId);
+      };
+    }
+  }, [inDialog]);
+
+  // Notificamos cambios a componentes externos como el diálogo
+  React.useEffect(() => {
+    if (onDataChange) {
+      onDataChange({ params, contextForModel });
+    }
+  }, [params, contextForModel, onDataChange]);
 
   return (
-    <div className="flex h-screen bg-background">
-      {/* Left Sidebar */}
-      <div
-        className={cn(
-          "border-r p-4 flex flex-col gap-3 transition-all duration-300",
-          isMenuCollapsed ? "w-20" : "w-64"
-        )}
-      >
-        <div className="flex items-center gap-2 mb-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsMenuCollapsed(!isMenuCollapsed)}
+    <div
+      className={`flex ${
+        inDialog ? "h-full max-h-full overflow-hidden" : "h-full"
+      } bg-background relative`}
+      ref={chatContainerRef}
+      style={inDialog ? { overflow: "hidden" } : undefined}
+    >
+      {!inDialog && (
+        <>
+          {/* Middle Content Area - Solo visible cuando no está en diálogo */}
+          <div className="flex-1 border-r p-4 overflow-auto">
+            {React.isValidElement(children) &&
+              React.cloneElement<ChildComponentProps>(
+                children as React.ReactElement<ChildComponentProps>,
+                { params, contextForModel, setContextForModel }
+              )}
+          </div>
+
+          {/* Resizer - Solo visible cuando no está en diálogo */}
+          <div
+            className="relative w-1 bg-border hover:bg-primary/50 cursor-col-resize group"
+            onMouseDown={startResizing}
           >
-            <Menu className="w-6 h-6" />
-          </Button>
-          {!isMenuCollapsed && (
-            <span className="text-sm text-muted-foreground">Menu</span>
-          )}
-        </div>
-        {menuItems.map((item) => (
-          <Button
-            key={item.text}
-            variant="outline"
-            className={cn(
-              "w-full justify-start normal-case text-base gap-3 bg-gray-50/50 hover:bg-gray-100",
-              isMenuCollapsed ? "px-2 justify-center" : ""
+            {isCollapsed && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-1/2 -translate-y-1/2 -left-4 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => {
+                  setIsCollapsed(false);
+                  setChatWidth(400);
+                }}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
             )}
-            onClick={() => router.push(item.route)}
-          >
-            {item.icon}
-            {!isMenuCollapsed && item.text}
-          </Button>
-        ))}
-      </div>
+          </div>
+        </>
+      )}
 
-      {/* Middle Content Area */}
-      <div className="flex-1 border-r p-4 min-h-0 overflow-auto">
-        {React.isValidElement(children) &&
-          React.cloneElement<ChildComponentProps>(
-            children as React.ReactElement<ChildComponentProps>,
-            { params, contextForModel, setContextForModel }
-          )}
-      </div>
-
-      <>
-        {/* Resizer with expand button */}
-        <div
-          className="relative w-1 bg-border hover:bg-primary/50 cursor-col-resize group"
-          onMouseDown={startResizing}
-        >
-          {isCollapsed && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-1/2 -translate-y-1/2 -left-4 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => {
-                setIsCollapsed(false);
-                setChatWidth(400);
-              }}
+      {/* Chat Area - Usando Grid para modo diálogo */}
+      <div
+        className={`${
+          inDialog
+            ? "grid grid-rows-[auto_1fr_auto] h-full w-full overflow-hidden"
+            : "flex flex-col relative"
+        }`}
+        style={
+          inDialog
+            ? { overflow: "hidden", maxHeight: "100%" }
+            : { width: isCollapsed ? "4px" : `${chatWidth}px` }
+        }
+      >
+        {(!isCollapsed || inDialog) && (
+          <>
+            {/* Header - En modo grid es la primera fila */}
+            <div
+              className={`border-b p-4 bg-background z-10 flex-none ${
+                !inDialog ? "absolute top-0 left-0 right-0" : ""
+              }`}
             >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-
-        {/* Chat Area */}
-        <div
-          className="flex flex-col min-h-0"
-          style={{ width: isCollapsed ? "4px" : `${chatWidth}px` }}
-        >
-          {!isCollapsed && (
-            <>
-              {/* Header */}
-              <div className="border-b p-4 flex-shrink-0">
-                <div className="flex items-center justify-between gap-2">
-                  <span>Ask AI</span>
+              <div className="flex items-center justify-between gap-2">
+                <span>{dialogTitle}</span>
+                {!inDialog && (
                   <Button
                     variant="ghost"
                     size="icon"
@@ -268,55 +304,45 @@ export default function ChatInterface({
                   >
                     <ChevronRight className="h-4 w-4" />
                   </Button>
-                </div>
+                )}
               </div>
+            </div>
 
-              {/* Messages */}
-              <div className="flex-1 p-4 overflow-y-auto">
-                <div className="space-y-4">
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className="flex items-start min-w-0 w-full"
-                    >
-                      {message.role !== "user" ? (
-                        !message.toolInvocations &&
-                        messages[messages.indexOf(message) - 1]?.role ===
-                          "user" && (
-                          <>
-                            <div className="h-6 w-6 rounded-full bg-pink-200 flex-shrink-0" />
-                            <span className="font-medium mr-2 flex-shrink-0">
-                              AI
-                            </span>
-                            <Card className="p-3 bg-muted break-words min-w-0 max-w-[85%]">
-                              <ReactMarkdown
-                                rehypePlugins={[rehypeHighlight]}
-                                remarkPlugins={[remarkGfm]}
-                                components={{
-                                  code: ({ className, children }) => {
-                                    const match = /language-(\w+)/.exec(
-                                      className || ""
-                                    );
-                                    return match ? (
-                                      <CodeBlock className={className}>
-                                        {children}
-                                      </CodeBlock>
-                                    ) : (
-                                      <code className={className}>
-                                        {children}
-                                      </code>
-                                    );
-                                  },
-                                }}
-                              >
-                                {message.content}
-                              </ReactMarkdown>
-                            </Card>
-                          </>
-                        )
-                      ) : (
-                        <div className="flex items-start gap-2 justify-end w-full">
-                          <Card className="p-3 bg-blue-500 text-white break-words overflow-x-hidden min-w-0 max-w-[85%] order-2">
+            {/* Messages - En modo grid es la fila central con scroll */}
+            <div
+              className={`${
+                inDialog
+                  ? "overflow-y-auto min-h-0 max-h-full"
+                  : "absolute inset-x-0 overflow-y-auto"
+              }`}
+              style={
+                !inDialog
+                  ? {
+                      top: `${dialogHeaderHeight}px`,
+                      bottom:
+                        contextForModel.size > 0
+                          ? `calc(${dialogFooterHeight}px + var(--context-height, 0px))`
+                          : `${dialogFooterHeight}px`,
+                    }
+                  : { maxHeight: "100%" }
+              }
+            >
+              <div className={`p-4 space-y-4`}>
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className="flex items-start min-w-0 w-full"
+                  >
+                    {message.role !== "user" ? (
+                      !message.toolInvocations &&
+                      messages[messages.indexOf(message) - 1]?.role ===
+                        "user" && (
+                        <>
+                          <div className="h-6 w-6 rounded-full bg-pink-200 flex-shrink-0" />
+                          <span className="font-medium mr-2 flex-shrink-0">
+                            AI
+                          </span>
+                          <Card className="p-3 bg-muted break-words min-w-0 max-w-[85%]">
                             <ReactMarkdown
                               rehypePlugins={[rehypeHighlight]}
                               remarkPlugins={[remarkGfm]}
@@ -340,58 +366,101 @@ export default function ChatInterface({
                               {message.content}
                             </ReactMarkdown>
                           </Card>
-                          <div className="flex items-center gap-2 order-3">
-                            <span className="font-medium">{message.role}</span>
-                            <div className="h-6 w-6 rounded-full bg-pink-200" />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Input Area */}
-              {contextForModel.size > 0 && (
-                <div className="border-t p-4 flex gap-2">
-                  <div className="flex flex-col gap-2">
-                    <div className="flex space-x-2 items-center">
-                      <span>Only touch the following parts:</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="items-center gap-1 bg-red-500 text-white p-2 rounded-lg"
-                        onClick={() => setContextForModel(new Set())}
-                      >
-                        Clear all filters
-                      </Button>
-                    </div>
-                    <div className="flex flex-wrap gap-2 p-2 rounded-lg">
-                      {Array.from(contextForModel).map((tool) => (
-                        <div
-                          key={tool}
-                          className="flex items-center gap-1 bg-blue-500 text-white p-2 rounded-lg"
-                        >
-                          <span>{tool}</span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-4 w-4"
-                            onClick={() => {
-                              const newTools = new Set(contextForModel);
-                              newTools.delete(tool);
-                              setContextForModel(newTools);
+                        </>
+                      )
+                    ) : (
+                      <div className="flex items-start gap-2 justify-end w-full">
+                        <Card className="p-3 bg-blue-500 text-white break-words overflow-x-hidden min-w-0 max-w-[85%] order-2">
+                          <ReactMarkdown
+                            rehypePlugins={[rehypeHighlight]}
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              code: ({ className, children }) => {
+                                const match = /language-(\w+)/.exec(
+                                  className || ""
+                                );
+                                return match ? (
+                                  <CodeBlock className={className}>
+                                    {children}
+                                  </CodeBlock>
+                                ) : (
+                                  <code className={className}>{children}</code>
+                                );
+                              },
                             }}
                           >
-                            <X className="h-5 w-5 hover:opacity-70 rounded-full" />
-                          </Button>
+                            {message.content}
+                          </ReactMarkdown>
+                        </Card>
+                        <div className="flex items-center gap-2 order-3">
+                          <span className="font-medium">{message.role}</span>
+                          <div className="h-6 w-6 rounded-full bg-pink-200" />
                         </div>
-                      ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Área de filtros y formulario */}
+            <div
+              className={`${
+                inDialog ? "flex-none" : "absolute bottom-0 left-0 right-0"
+              }`}
+            >
+              {/* Área de filtros - Justo sobre el área de entrada */}
+              {contextForModel.size > 0 && (
+                <div
+                  className="border-t bg-background z-10"
+                  style={!inDialog ? { bottom: "65px" } : undefined}
+                  ref={contextAreaRef}
+                >
+                  <div className="p-4 flex gap-2">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex space-x-2 items-center">
+                        <span>Only touch the following parts:</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="items-center gap-1 bg-red-500 text-white p-2 rounded-lg"
+                          onClick={() => setContextForModel(new Set())}
+                        >
+                          Clear all filters
+                        </Button>
+                      </div>
+                      <div className="flex flex-wrap gap-2 p-2 rounded-lg">
+                        {Array.from(contextForModel).map((tool) => (
+                          <div
+                            key={tool}
+                            className="flex items-center gap-1 bg-blue-500 text-white p-2 rounded-lg"
+                          >
+                            <span>{tool}</span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-4 w-4"
+                              onClick={() => {
+                                const newTools = new Set(contextForModel);
+                                newTools.delete(tool);
+                                setContextForModel(newTools);
+                              }}
+                            >
+                              <X className="h-5 w-5 hover:opacity-70 rounded-full" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
               )}
-              <form onSubmit={onSubmit} className="border-t p-4 flex gap-2">
+
+              {/* Formulario de entrada - Última fila en grid o fijo abajo en posición absoluta */}
+              <form
+                onSubmit={onSubmit}
+                className="p-4 flex gap-2 border-t bg-background z-10"
+              >
                 <TextareaAutosize
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -411,10 +480,21 @@ export default function ChatInterface({
                   <Send className="h-4 w-4" />
                 </Button>
               </form>
-            </>
-          )}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Renderizar los hijos cuando está en diálogo - Ocultos pero necesarios para la lógica */}
+      {inDialog && (
+        <div className="hidden">
+          {React.isValidElement(children) &&
+            React.cloneElement<ChildComponentProps>(
+              children as React.ReactElement<ChildComponentProps>,
+              { params, contextForModel, setContextForModel }
+            )}
         </div>
-      </>
+      )}
     </div>
   );
 }
