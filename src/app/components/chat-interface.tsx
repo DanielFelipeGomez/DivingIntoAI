@@ -9,13 +9,12 @@ import {
   ChevronRight,
   FileEdit,
   FileSearch,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Message, useChat } from "ai/react";
-import { Stock } from "./stock";
-import TableData from "./table-data";
+import { useChat } from "ai/react";
 import { TextareaAutosize } from "@mui/material";
 import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
@@ -24,8 +23,6 @@ import remarkGfm from "remark-gfm";
 import "highlight.js/styles/github-dark.css";
 import Dictaphone from "./dictaphone";
 import { CodeBlock } from "./code-block";
-import { resultState } from "../api/chat/route";
-import { Tools } from "../ai/tools";
 import { TicketData } from "../ai/ticket-tools/ticket-generator-tool";
 import { CodeReviewData } from "../ai/code-review-tools/code-review-tool";
 
@@ -33,23 +30,25 @@ export type modelDataResult = TicketData | CodeReviewData;
 
 interface ChildComponentProps {
   params: modelDataResult | undefined;
+  contextForModel: Set<string>;
+  setContextForModel: (tools: Set<string>) => void;
 }
 
-const getToolMessage = (messages: Message[], toolName: Tools) => {
-  const tool = messages
-    .slice()
-    .reverse()
-    .find((message) =>
-      message?.toolInvocations?.some(
-        (tool) => tool.toolName === toolName && tool.state === resultState
-      )
-    )?.toolInvocations?.[0];
+// const getToolMessage = (messages: Message[], toolName: Tools) => {
+//   const tool = messages
+//     .slice()
+//     .reverse()
+//     .find((message) =>
+//       message?.toolInvocations?.some(
+//         (tool) => tool.toolName === toolName && tool.state === resultState
+//       )
+//     )?.toolInvocations?.[0];
 
-  if (tool && tool.state === resultState) {
-    return tool.result;
-  }
-  return undefined;
-};
+//   if (tool && tool.state === resultState) {
+//     return tool.result;
+//   }
+//   return undefined;
+// };
 
 export default function ChatInterface({
   children,
@@ -58,6 +57,9 @@ export default function ChatInterface({
 }) {
   const [params, setParams] = React.useState<modelDataResult | undefined>(
     undefined
+  );
+  const [contextForModel, setContextForModel] = React.useState<Set<string>>(
+    new Set()
   );
   const [chatWidth, setChatWidth] = React.useState(400);
   const [isResizing, setIsResizing] = React.useState(false);
@@ -72,26 +74,56 @@ export default function ChatInterface({
     },
   });
 
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const contextToUse = Array.from(contextForModel).map((tool) => ({
+      tool,
+    }));
+    setInput(input + `\n\nContext to use: ${JSON.stringify(contextToUse)}`);
+    handleSubmit(e);
+  };
+
   console.log("messages", messages);
   React.useEffect(() => {
     if (messages.length > 0) {
-      const targetDataMessage = getToolMessage(messages, Tools.getTicketData);
+      // const targetDataMessage = getToolMessage(messages, Tools.getTicketData);
 
-      const codeReviewMessage = getToolMessage(
-        messages,
-        Tools.getCodeReviewData
-      );
+      // const codeReviewMessage = getToolMessage(
+      //   messages,
+      //   Tools.getCodeReviewData
+      // );
 
-      console.log("targetDataMessage", targetDataMessage);
-      console.log("codeReviewMessage", codeReviewMessage);
+      // const titleMessage = getToolMessage(messages, Tools.getTitleForTicket);
+      // const descriptionMessage = getToolMessage(
+      //   messages,
+      //   Tools.getDescriptionForTicket
+      // );
 
-      if (targetDataMessage) {
-        console.log("REUSLT HERE", targetDataMessage);
-        setParams(targetDataMessage as TicketData);
-      }
+      // console.log("targetDataMessage", targetDataMessage);
+      // console.log("codeReviewMessage", codeReviewMessage);
 
-      if (codeReviewMessage) {
-        setParams(codeReviewMessage as CodeReviewData);
+      // if (targetDataMessage) {
+      //   console.log("REUSLT HERE", targetDataMessage);
+      //   setParams(targetDataMessage as TicketData);
+      // }
+
+      // if (codeReviewMessage) {
+      //   setParams(codeReviewMessage as CodeReviewData);
+      // }
+
+      // if (titleMessage) {
+      //   setParams(titleMessage as TicketData);
+      // }
+
+      // if (descriptionMessage) {
+      //   setParams(descriptionMessage as TicketData);
+      // }
+
+      // get last tool and define the params
+      const lastTool = messages[messages.length - 1].toolInvocations?.[0];
+      if (lastTool && lastTool.state === "result") {
+        console.log("lastTool", lastTool);
+        setParams(lastTool.result);
       }
     }
   }, [messages, setParams]);
@@ -190,7 +222,7 @@ export default function ChatInterface({
         {React.isValidElement(children) &&
           React.cloneElement<ChildComponentProps>(
             children as React.ReactElement<ChildComponentProps>,
-            { params }
+            { params, contextForModel, setContextForModel }
           )}
       </div>
 
@@ -248,77 +280,38 @@ export default function ChatInterface({
                       className="flex items-start min-w-0 w-full"
                     >
                       {message.role !== "user" ? (
-                        !message.toolInvocations ? (
-                          <Card className="p-3 bg-muted break-words min-w-0 max-w-[85%]">
-                            <ReactMarkdown
-                              rehypePlugins={[rehypeHighlight]}
-                              remarkPlugins={[remarkGfm]}
-                              components={{
-                                code: ({ className, children }) => {
-                                  const match = /language-(\w+)/.exec(
-                                    className || ""
-                                  );
-                                  return match ? (
-                                    <CodeBlock className={className}>
-                                      {children}
-                                    </CodeBlock>
-                                  ) : (
-                                    <code className={className}>
-                                      {children}
-                                    </code>
-                                  );
-                                },
-                              }}
-                            >
-                              {message.content}
-                            </ReactMarkdown>
-                          </Card>
-                        ) : (
+                        !message.toolInvocations &&
+                        messages[messages.indexOf(message) - 1]?.role ===
+                          "user" && (
                           <>
                             <div className="h-6 w-6 rounded-full bg-pink-200 flex-shrink-0" />
                             <span className="font-medium mr-2 flex-shrink-0">
                               AI
                             </span>
-
-                            <div className="min-w-0 max-w-[75%] break-words">
-                              {message.toolInvocations?.map(
-                                (toolInvocation) => {
-                                  const { toolName, toolCallId, state } =
-                                    toolInvocation;
-
-                                  if (state === "result") {
-                                    if (toolName === "getStockPrice") {
-                                      const { result } = toolInvocation;
-                                      return (
-                                        <Stock key={toolCallId} {...result} />
-                                      );
-                                    } else if (
-                                      toolName === "getMockTableData"
-                                    ) {
-                                      const { result } = toolInvocation;
-                                      return (
-                                        <TableData
-                                          key={toolCallId}
-                                          {...result}
-                                        />
-                                      );
-                                    }
-                                  } else {
-                                    return (
-                                      <div key={toolCallId}>
-                                        {toolName === "displayWeather" ? (
-                                          <div>Loading weather...</div>
-                                        ) : toolName === "getMockTableData" ? (
-                                          <div>Loading table data...</div>
-                                        ) : (
-                                          <div>Loading...</div>
-                                        )}
-                                      </div>
+                            <Card className="p-3 bg-muted break-words min-w-0 max-w-[85%]">
+                              <ReactMarkdown
+                                rehypePlugins={[rehypeHighlight]}
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                  code: ({ className, children }) => {
+                                    const match = /language-(\w+)/.exec(
+                                      className || ""
                                     );
-                                  }
-                                }
-                              )}
-                            </div>
+                                    return match ? (
+                                      <CodeBlock className={className}>
+                                        {children}
+                                      </CodeBlock>
+                                    ) : (
+                                      <code className={className}>
+                                        {children}
+                                      </code>
+                                    );
+                                  },
+                                }}
+                              >
+                                {message.content}
+                              </ReactMarkdown>
+                            </Card>
                           </>
                         )
                       ) : (
@@ -359,7 +352,46 @@ export default function ChatInterface({
               </div>
 
               {/* Input Area */}
-              <form onSubmit={handleSubmit} className="border-t p-4 flex gap-2">
+              {contextForModel.size > 0 && (
+                <div className="border-t p-4 flex gap-2">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex space-x-2 items-center">
+                      <span>Only touch the following parts:</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="items-center gap-1 bg-red-500 text-white p-2 rounded-lg"
+                        onClick={() => setContextForModel(new Set())}
+                      >
+                        Clear all filters
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2 p-2 rounded-lg">
+                      {Array.from(contextForModel).map((tool) => (
+                        <div
+                          key={tool}
+                          className="flex items-center gap-1 bg-blue-500 text-white p-2 rounded-lg"
+                        >
+                          <span>{tool}</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-4 w-4"
+                            onClick={() => {
+                              const newTools = new Set(contextForModel);
+                              newTools.delete(tool);
+                              setContextForModel(newTools);
+                            }}
+                          >
+                            <X className="h-5 w-5 hover:opacity-70 rounded-full" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+              <form onSubmit={onSubmit} className="border-t p-4 flex gap-2">
                 <TextareaAutosize
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -368,7 +400,9 @@ export default function ChatInterface({
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
-                      handleSubmit(e);
+                      onSubmit(
+                        e as unknown as React.FormEvent<HTMLFormElement>
+                      );
                     }
                   }}
                 />

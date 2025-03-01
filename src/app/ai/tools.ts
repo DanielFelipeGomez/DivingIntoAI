@@ -1,7 +1,17 @@
 import { tool as createTool } from "ai";
 import { z } from "zod";
 import { getCodeReviewData } from "./code-review-tools/code-review-tool";
-import { getTicketData } from "./ticket-tools/ticket-generator-tool";
+import {
+  getTitleForTicket,
+  getDescriptionForTicket,
+  getRequirementsForTicket,
+  getReproductionStepsForTicket,
+  getCodeForTicket,
+  getLabelsForTicket,
+  getLimitDateForTicket,
+  getPriorityForTicket,
+} from "./ticket-tools/ticket-generator-tool";
+import { Tools } from "./tools.types";
 
 export const stockTool = createTool({
   description: "Get price for a stock",
@@ -80,22 +90,15 @@ export const stockTool = createTool({
 //   }),
 // });
 
-export enum Tools {
-  getCodeReviewData = "getCodeReviewData",
-  getStockPrice = "getStockPrice",
-  getTicketData = "getTicketData",
-  // getDescriptionForTicket,
-  // getTitleForTicket,
-  // getRequirementsForTicket,
-  // getReproductionStepsForTicket,
-  // getCodeForTicket,
-  // getLabelsForTicket,
-  // getLimitDateForTicket,
-  // getPriorityForTicket,
-}
-
 export const toolsList = {
   [Tools.getCodeReviewData]: getCodeReviewData,
   [Tools.getStockPrice]: stockTool,
-  [Tools.getTicketData]: getTicketData,
+  [Tools.getTitleForTicket]: getTitleForTicket,
+  [Tools.getDescriptionForTicket]: getDescriptionForTicket,
+  [Tools.getRequirementsForTicket]: getRequirementsForTicket,
+  [Tools.getReproductionStepsForTicket]: getReproductionStepsForTicket,
+  [Tools.getCodeForTicket]: getCodeForTicket,
+  [Tools.getLabelsForTicket]: getLabelsForTicket,
+  [Tools.getLimitDateForTicket]: getLimitDateForTicket,
+  [Tools.getPriorityForTicket]: getPriorityForTicket,
 };

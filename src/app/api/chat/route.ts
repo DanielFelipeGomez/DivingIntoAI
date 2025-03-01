@@ -16,9 +16,10 @@ export async function POST(request: Request) {
       model: chatModel,
       system: `
       You are a friendly assistant!
+      If you use a tool, then don't send a message to the user, just return the result of the tool.
       `,
       messages,
-      maxSteps: 1,
+      maxSteps: 10,
       tools: toolsList,
     });
 
