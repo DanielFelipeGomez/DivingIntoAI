@@ -1,17 +1,8 @@
 import { Check, Copy, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { CodeReviewFragment } from "../ai/code-review-tools/code-review-tool";
 
-export interface ReviewTargetProps {
-  codeBefore: string;
-  codeAfter: string;
-  explanation: string;
-  reference?: {
-    text: string;
-    url: string;
-  };
-}
-
-export default function ReviewTarget(props: ReviewTargetProps) {
+export default function ReviewTarget(props: CodeReviewFragment) {
   console.log("params", props);
   return props ? (
     <Card className="w-full">

@@ -5,8 +5,8 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { useState, useRef, useEffect } from "react";
 import { X, ChevronDown } from "lucide-react";
 import dayjs, { Dayjs } from "dayjs";
-import { ChatData } from "./chat-interface";
 import ReactMarkdown from "react-markdown";
+import { TicketData } from "../ai/ticket-tools/ticket-generator-tool";
 
 // Función auxiliar para generar colores aleatorios pastel
 const getRandomPastelColor = () => {
@@ -17,7 +17,6 @@ const getRandomPastelColor = () => {
   };
 };
 
-// Añade estos tipos
 type Priority = "Highest" | "High" | "Medium" | "Low" | "Lowest";
 
 interface PriorityOption {
@@ -60,8 +59,7 @@ const priorities: PriorityOption[] = [
   },
 ];
 
-// Añade esta interfaz para tipar los datos del ticket
-interface TicketData {
+interface TicketDataSaved {
   title: string;
   description: string;
   requirements: string;
@@ -79,7 +77,11 @@ interface TicketData {
   code: string;
 }
 
-export default function TaskCard({ params }: { params?: ChatData }) {
+export default function TaskCard({
+  params,
+}: {
+  params: TicketData | undefined;
+}) {
   const [tags, setTags] = useState([
     {
       id: 1,
@@ -130,6 +132,7 @@ export default function TaskCard({ params }: { params?: ChatData }) {
         limitDate,
         priority,
         labels,
+        code,
       } = params;
 
       // Usar funciones de actualización de estado para evitar problemas de sincronización
@@ -139,7 +142,7 @@ export default function TaskCard({ params }: { params?: ChatData }) {
       setReproductionSteps((prev) => reproductionSteps || prev);
       setDueDate((prev) => (limitDate ? dayjs(limitDate) : prev));
       setPriority((prev) => (priority as Priority) || prev);
-
+      setCode((prev) => code || prev);
       if (labels && labels.length > 0) {
         setTags(
           labels.map((label: string, index: number) => ({
@@ -178,7 +181,7 @@ export default function TaskCard({ params }: { params?: ChatData }) {
   };
 
   const handleSave = () => {
-    const ticketData: TicketData = {
+    const ticketData: TicketDataSaved = {
       title: "Add functionality to Rebalance Dashboard",
       description: descriptionRef.current?.value || "",
       requirements: requirementsRef.current?.value || "",

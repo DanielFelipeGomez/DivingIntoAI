@@ -1,17 +1,13 @@
-import ReviewTarget, { ReviewTargetProps } from "./review-target";
+import { CodeReviewFragment } from "../ai/code-review-tools/code-review-tool";
+import ReviewTarget from "./review-target";
 
-export interface CodeReviewProps {
-  result: ReviewTargetProps[];
-  state: string;
-}
-
-export default function CodeReview({ params }: { params?: CodeReviewProps }) {
+export default function CodeReview({
+  params,
+}: {
+  params?: CodeReviewFragment[];
+}) {
   console.log("Params:", params);
-  return params?.result && params.state === "result" ? (
-    params.result?.map((result) => (
-      <ReviewTarget key={result.codeBefore} {...result} />
-    ))
-  ) : (
-    <div>No params</div>
-  );
+  return params?.map((result) => (
+    <ReviewTarget key={result.codeBefore} {...result} />
+  ));
 }

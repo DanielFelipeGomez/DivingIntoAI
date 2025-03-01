@@ -1,6 +1,7 @@
-import { openai } from "@ai-sdk/openai";
-import { tool as createTool, generateText } from "ai";
+import { tool as createTool } from "ai";
 import { z } from "zod";
+import { getCodeReviewData } from "./code-review-tools/code-review-tool";
+import { getTicketData } from "./ticket-tools/ticket-generator-tool";
 
 export const stockTool = createTool({
   description: "Get price for a stock",
@@ -15,209 +16,86 @@ export const stockTool = createTool({
   },
 });
 
-// export const codeLintTool = createTool({
-//   description: "Analyze code and return recommended rule corrections",
+// export const getDescriptionForTicket = createTool({
+//   description:
+//     "Generate specifically the description of the ticket, because the user request it",
 //   parameters: z.object({
-//     code: z.string().describe("The source code to analyze"),
+//     description: z.string().describe("The description of the ticket"),
 //   }),
-//   execute: async function ({ code }) {
-//     const prompt = `
-//         Analyze the following JavaScript code and check it against these predefined rules:
-//         ${rules
-//           .map((rule) => `Rule: ${rule.id} - ${rule.description}`)
-//           .join("\n")}
-
-//         Code to analyze:
-//         \`\`\`js
-//         ${code}
-//         \`\`\`
-
-//         Provide a detailed JSON response with:
-//         - The rule ID that was violated
-//         - Line number of the issue
-//         - Content of the problematic line
-//         - Suggested fix based on the predefined rules
-//         `;
-
-//     const model = openai("gpt-3.5-turbo");
-
-//     const schema = z.object({
-//       ruleId: z.string().describe("The ID of the rule that was violated"),
-//       lineNumber: z
-//         .number()
-//         .describe("The line number where the issue occurred"),
-//       lineContent: z.string().describe("The content of the problematic line"),
-//       suggestedFix: z
-//         .string()
-//         .describe("The suggested fix based on the predefined rules"),
-//     });
-
-//     const { object } = await generateObject({
-//       model,
-//       prompt,
-//       schema,
-//     });
-
-//     return object;
+//   execute: async function ({ description }) {
+//     return description;
 //   },
 // });
 
-export const getMockTableData = createTool({
-  description: "Generate mock data for a table based on a description",
-  parameters: z.object({
-    description: z
-      .string()
-      .describe("Description of the table and its columns"),
-    numRows: z
-      .number()
-      .optional()
-      .describe("Number of rows to generate (default: 10)"),
-  }),
-  execute: async function ({ description, numRows = 10 }) {
-    const prompt = `
-        Generate mock data for a table based on the following description:
-        ${description}
-The table should have ${numRows} rows.
-        Provide the mock data in JSON format with column names as keys and arrays of values as values.
-        example:
-        {
-          "id": [1, 2, 3, 4, 5],
-          "name": ["John", "Jane", "Bob", "Alice", "Tom"],
-          "age": [25, 30, 40, 50, 60]
-        }
-        `;
-
-    const model = openai("gpt-3.5-turbo");
-
-    const { text } = await generateText({
-      model,
-      prompt,
-      maxTokens: 500,
-      maxRetries: 2,
-    });
-
-    return JSON.parse(text);
-  },
-});
-
-export const getTargetData = createTool({
-  description:
-    "Generate the target data for a table based on a description given from the user",
-  parameters: z.object({
-    title: z
-      .string()
-      .describe(
-        "The title of the ticket based on the initial information given"
-      ),
-    description: z
-      .string()
-      .describe(
-        "Description of the ticket in base to the initial information given"
-      ),
-    requirements: z
-      .string()
-      .describe(
-        "List of the requirements of the ticket in base to the initial information given"
-      ),
-    reproductionSteps: z
-      .string()
-      .describe(
-        "List of the reproduction steps of the ticket in base to the initial information given"
-      ),
-    limitDate: z
-      .string()
-      .describe(
-        "Limit date of the ticket in base to the initial information given (format: YYYY-MM-DD)"
-      ),
-    priority: z
-      .enum(["Highest", "High", "Medium", "Low", "Lowest"])
-      .describe(
-        "Priority of the ticket in base to the initial information given"
-      ),
-    code: z
-      .string()
-      .describe("Code reference of the ticket if the user has provided it"),
-    labels: z
-      .array(z.string())
-      .describe(
-        "Labels of the ticket in base to the initial information given"
-      ),
-  }),
-  execute: async function ({
-    title,
-    description,
-    requirements,
-    reproductionSteps,
-    limitDate,
-    priority,
-    labels,
-  }) {
-    return {
-      title,
-      description,
-      requirements,
-      reproductionSteps,
-      limitDate,
-      priority,
-      labels,
-    };
-  },
-});
-
-export const getCodeReviewData = createTool({
-  description: "Receive a code review and return the data",
-  parameters: z.object({
-    codeReview: z.array(
-      z.object({
-        codeBefore: z
-          .string()
-          .describe("A fragment of the code before the proposed changes"),
-        codeAfter: z.string().describe("A fragment of the code proposed"),
-        explanation: z
-          .string()
-          .describe("The explanation of the proposed changes"),
-        reference: z.object({
-          text: z.string().describe("The text of the reference"),
-          url: z.string().describe("The URL of the reference"),
-        }),
-      })
-    ),
-  }),
-  // parameters: z.object({
-  //   codeBefore: z.string().describe("The code before the proposed changes"),
-  //   codeAfter: z.string().describe("The code proposed"),
-  //   explanation: z.string().describe("The explanation of the proposed changes"),
-  //   reference: z.object({
-  //     text: z.string().describe("The text of the reference"),
-  //     url: z.string().describe("The URL of the reference"),
-  //   }),
-  // }),
-  execute: async function (codeReview) {
-    console.log("HEYYYYYYYYYYYY QUE CODIGo", codeReview);
-    return codeReview.codeReview;
-  },
-});
-
-// export const getCodeReviewData = createTool({
-//   description: "Generate a code review in base to the code given",
+// export const getTitleForTicket = createTool({
+//   description: "Generate specifically the title of the ticket",
 //   parameters: z.object({
-//     codeBefore: z.string().describe("The code before the proposed changes"),
-//     codeAfter: z.string().describe("The code proposed"),
-//     explanation: z.string().describe("The explanation of the proposed changes"),
-//     reference: z.object({
-//       text: z.string().describe("The text of the reference"),
-//       url: z.string().describe("The URL of the reference"),
-//     }),
+//     title: z.string().describe("The title of the ticket"),
 //   }),
-//   execute: async function ({ codeBefore, codeAfter, explanation, reference }) {
-//     console.log("code", codeBefore, codeAfter, explanation, reference);
-//     return { codeBefore, codeAfter, explanation, reference };
-//   },
 // });
 
-export const tools = {
-  getCodeReviewData,
-  getStockPrice: stockTool,
-  // codeLint: codeLintTool,
-  getTargetData,
+// export const getRequirementsForTicket = createTool({
+//   description: "Generate specifically the requirements of the ticket",
+//   parameters: z.object({
+//     requirements: z.string().describe("The requirements of the ticket"),
+//   }),
+// });
+
+// export const getReproductionStepsForTicket = createTool({
+//   description: "Generate specifically the reproduction steps of the ticket",
+//   parameters: z.object({
+//     reproductionSteps: z
+//       .string()
+//       .describe("The reproduction steps of the ticket"),
+//   }),
+// });
+
+// export const getCodeForTicket = createTool({
+//   description: "Generate specifically the code of the ticket",
+//   parameters: z.object({
+//     code: z.string().describe("The code of the ticket"),
+//   }),
+// });
+
+// export const getLabelsForTicket = createTool({
+//   description: "Generate specifically the labels of the ticket",
+//   parameters: z.object({
+//     labels: z.array(z.string()).describe("The labels of the ticket"),
+//   }),
+// });
+
+// export const getLimitDateForTicket = createTool({
+//   description: "Generate specifically the limit date of the ticket",
+//   parameters: z.object({
+//     limitDate: z.string().describe("The limit date of the ticket"),
+//   }),
+// });
+
+// export const getPriorityForTicket = createTool({
+//   description: "Generate specifically the priority of the ticket",
+//   parameters: z.object({
+//     priority: z
+//       .enum(["Highest", "High", "Medium", "Low", "Lowest"])
+//       .describe("The priority of the ticket"),
+//   }),
+// });
+
+export enum Tools {
+  getCodeReviewData = "getCodeReviewData",
+  getStockPrice = "getStockPrice",
+  getTicketData = "getTicketData",
+  // getDescriptionForTicket,
+  // getTitleForTicket,
+  // getRequirementsForTicket,
+  // getReproductionStepsForTicket,
+  // getCodeForTicket,
+  // getLabelsForTicket,
+  // getLimitDateForTicket,
+  // getPriorityForTicket,
+}
+
+export const toolsList = {
+  [Tools.getCodeReviewData]: getCodeReviewData,
+  [Tools.getStockPrice]: stockTool,
+  [Tools.getTicketData]: getTicketData,
 };

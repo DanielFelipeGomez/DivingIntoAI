@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import "regenerator-runtime/runtime";
 
@@ -6,8 +5,6 @@ import * as React from "react";
 import {
   Menu,
   Send,
-  Copy,
-  Check,
   ChevronLeft,
   ChevronRight,
   FileEdit,
@@ -16,78 +13,52 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useChat } from "ai/react";
+import { Message, useChat } from "ai/react";
 import { Stock } from "./stock";
 import TableData from "./table-data";
 import { TextareaAutosize } from "@mui/material";
 import { useRouter } from "next/navigation";
-import { CodeReviewProps } from "./code-review";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import remarkGfm from "remark-gfm";
 import "highlight.js/styles/github-dark.css";
 import Dictaphone from "./dictaphone";
+import { CodeBlock } from "./code-block";
+import { resultState } from "../api/chat/route";
+import { Tools } from "../ai/tools";
+import { TicketData } from "../ai/ticket-tools/ticket-generator-tool";
+import { CodeReviewData } from "../ai/code-review-tools/code-review-tool";
 
-const CodeBlock = ({
-  className,
-  children,
-}: {
-  className?: string;
-  children: React.ReactNode;
-}) => {
-  const [isCopied, setIsCopied] = React.useState(false);
-  const codeRef = React.useRef<HTMLElement>(null);
+export type modelDataResult = TicketData | CodeReviewData;
 
-  const copyToClipboard = () => {
-    if (codeRef.current) {
-      const text = codeRef.current.textContent || "";
-      navigator.clipboard.writeText(text);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
-    }
-  };
-
-  return (
-    <div className="relative group">
-      <Button
-        size="icon"
-        variant="ghost"
-        className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 group-hover:text-gray-500 hover:text-black hover:bg-gray-200/80 transition-all"
-        onClick={copyToClipboard}
-      >
-        {isCopied ? (
-          <Check className="h-4 w-4" />
-        ) : (
-          <Copy className="h-4 w-4" />
-        )}
-      </Button>
-      <pre className={cn("bg-slate-400 rounded-lg p-4", className)}>
-        <code ref={codeRef} className={className}>
-          {children}
-        </code>
-      </pre>
-    </div>
-  );
-};
-
-export interface ChatData {
-  title: string;
-  description: string;
-  requirements: string;
-  reproductionSteps: string;
-  limitDate: string;
-  priority: string;
-  labels: string[];
+interface ChildComponentProps {
+  params: modelDataResult | undefined;
 }
+
+const getToolMessage = (messages: Message[], toolName: Tools) => {
+  const tool = messages
+    .slice()
+    .reverse()
+    .find((message) =>
+      message?.toolInvocations?.some(
+        (tool) => tool.toolName === toolName && tool.state === resultState
+      )
+    )?.toolInvocations?.[0];
+
+  if (tool && tool.state === resultState) {
+    return tool.result;
+  }
+  return undefined;
+};
 
 export default function ChatInterface({
   children,
 }: {
-  children: React.ReactElement<any>;
+  children: React.ReactElement<ChildComponentProps>;
 }) {
-  const [params, setParams] = React.useState<
-    ChatData | CodeReviewProps | undefined
-  >(undefined);
+  const [params, setParams] = React.useState<modelDataResult | undefined>(
+    undefined
+  );
   const [chatWidth, setChatWidth] = React.useState(400);
   const [isResizing, setIsResizing] = React.useState(false);
   const [isCollapsed, setIsCollapsed] = React.useState(false);
@@ -101,58 +72,31 @@ export default function ChatInterface({
     },
   });
 
-  // Añadimos una referencia para evitar actualizaciones innecesarias
-  const lastProcessedMessage = React.useRef("");
-
+  console.log("messages", messages);
   React.useEffect(() => {
     if (messages.length > 0) {
-      const lastMessage = messages[messages.length - 1];
+      const targetDataMessage = getToolMessage(messages, Tools.getTicketData);
 
-      if (lastMessage.id !== lastProcessedMessage.current) {
-        lastProcessedMessage.current = lastMessage.id;
+      const codeReviewMessage = getToolMessage(
+        messages,
+        Tools.getCodeReviewData
+      );
 
-        const targetDataMessage = messages
-          .slice()
-          .reverse()
-          .find((message) =>
-            message?.toolInvocations?.some(
-              (tool) =>
-                tool.toolName === "getTargetData" && tool.state === "result"
-            )
-          );
+      console.log("targetDataMessage", targetDataMessage);
+      console.log("codeReviewMessage", codeReviewMessage);
 
-        const codeReviewMessage = messages
-          .slice()
-          .reverse()
-          .find((message) =>
-            message?.toolInvocations?.some(
-              (tool) =>
-                tool.toolName === "getCodeReviewData" && tool.state === "result"
-            )
-          );
+      if (targetDataMessage) {
+        console.log("REUSLT HERE", targetDataMessage);
+        setParams(targetDataMessage as TicketData);
+      }
 
-        if (targetDataMessage) {
-          const tool = targetDataMessage.toolInvocations?.find(
-            (tool) => tool.toolName === "getTargetData"
-          );
-          if (tool) {
-            setParams(tool as unknown as ChatData);
-          }
-        }
-
-        if (codeReviewMessage) {
-          const tool = codeReviewMessage.toolInvocations?.find(
-            (tool) => tool.toolName === "getCodeReviewData"
-          );
-          if (tool) {
-            console.log("tool", tool);
-            setParams(tool as unknown as CodeReviewProps);
-          }
-        }
+      if (codeReviewMessage) {
+        setParams(codeReviewMessage as CodeReviewData);
       }
     }
   }, [messages, setParams]);
 
+  // Resizer logic
   const startResizing = React.useCallback((e: React.MouseEvent) => {
     setIsResizing(true);
     e.preventDefault();
@@ -186,8 +130,6 @@ export default function ChatInterface({
       document.removeEventListener("mouseup", handleMouseUp);
     };
   }, [isResizing]);
-
-  console.log("messages", messages);
 
   const [isMenuCollapsed, setIsMenuCollapsed] = React.useState(true);
 
@@ -246,7 +188,10 @@ export default function ChatInterface({
       {/* Middle Content Area */}
       <div className="flex-1 border-r p-4 min-h-0 overflow-auto">
         {React.isValidElement(children) &&
-          React.cloneElement<any>(children, { params })}
+          React.cloneElement<ChildComponentProps>(
+            children as React.ReactElement<ChildComponentProps>,
+            { params }
+          )}
       </div>
 
       <>

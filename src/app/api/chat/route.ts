@@ -1,6 +1,8 @@
-import { tools } from "@/app/ai/tools";
+import { toolsList } from "@/app/ai/tools";
 import { chatModel } from "@/app/models";
 import { streamText } from "ai";
+
+export const resultState = "result";
 
 export async function POST(request: Request) {
   try {
@@ -14,11 +16,10 @@ export async function POST(request: Request) {
       model: chatModel,
       system: `
       You are a friendly assistant!
-      If the user ask for a code review, try to devide the code review in all the fragments that you consider are necessary but not more that 5 fragments.
       `,
       messages,
-      maxSteps: 5,
-      tools,
+      maxSteps: 1,
+      tools: toolsList,
     });
 
     if (!result) {
