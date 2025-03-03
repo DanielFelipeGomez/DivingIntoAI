@@ -13,7 +13,6 @@ export async function POST(request: Request) {
     }
 
     const result = streamText({
-      model: chatModel,
       system: `
       You are a friendly assistant!
       If you use a tool, then don't send a message to the user, just return the result of the tool.
@@ -21,6 +20,7 @@ export async function POST(request: Request) {
       messages,
       maxSteps: 10,
       tools: toolsList,
+      model: chatModel,
     });
 
     if (!result) {
