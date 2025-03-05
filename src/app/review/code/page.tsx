@@ -19,7 +19,7 @@ export default function ReviewCodePage() {
           </Button>
         </header>
         <main className="flex-1">
-          <ChatInterface>
+          <ChatInterface showPdfInsert={true}>
             <CodeReview params={undefined} />
           </ChatInterface>
         </main>

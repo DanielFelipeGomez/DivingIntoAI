@@ -2,11 +2,20 @@
 import "regenerator-runtime/runtime";
 
 import * as React from "react";
-import { Send, ChevronLeft, ChevronRight, X } from "lucide-react";
+import {
+  Send,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  FileUp,
+  Loader2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useChat } from "ai/react";
-import { TextareaAutosize } from "@mui/material";
+import { CardContent, TextareaAutosize } from "@mui/material";
+import { experimental_useObject } from "ai/react";
+
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import remarkGfm from "remark-gfm";
@@ -15,6 +24,7 @@ import Dictaphone from "./dictaphone";
 import { CodeBlock } from "./code-block";
 import { TicketData } from "../ai/ticket-tools/ticket-generator-tool";
 import { CodeReviewData } from "../ai/code-review-tools/code-review-tool";
+import { codeReviewsSchema } from "@/lib/code-review-schema";
 
 export type modelDataResult = TicketData | CodeReviewData;
 
@@ -47,6 +57,7 @@ export default function ChatInterface({
   dialogHeaderHeight = 57, // Altura por defecto del header del diálogo
   dialogFooterHeight = 65, // Altura por defecto del footer del diálogo
   onDataChange,
+  showPdfInsert = false,
 }: {
   children: React.ReactElement<ChildComponentProps>;
   inDialog?: boolean;
@@ -57,6 +68,7 @@ export default function ChatInterface({
     params: modelDataResult | undefined;
     contextForModel: Set<string>;
   }) => void;
+  showPdfInsert?: boolean;
 }) {
   const [params, setParams] = React.useState<modelDataResult | undefined>(
     undefined
@@ -228,6 +240,80 @@ export default function ChatInterface({
       onDataChange({ params, contextForModel });
     }
   }, [params, contextForModel, onDataChange]);
+
+  const [files, setFiles] = React.useState<File[]>([]);
+
+  const {
+    submit,
+    object: partialQuestions,
+    isLoading,
+  } = experimental_useObject({
+    api: "/api/code-review",
+    schema: codeReviewsSchema,
+    initialValue: undefined,
+    onError: (error) => {
+      console.error("Failed to generate quiz. Please try again.", error);
+      setFiles([]);
+    },
+    onFinish: ({ object }) => {
+      console.log("____________object_______________", object);
+
+      setParams(object as unknown as CodeReviewData);
+    },
+  });
+
+  React.useEffect(() => {
+    console.log(
+      "____________partialQuestions_______________",
+      partialQuestions
+    );
+    setParams(partialQuestions as unknown as CodeReviewData);
+  }, [partialQuestions]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+    // if (isSafari && isDragging) {
+    if (isSafari) {
+      console.error(
+        "Safari does not support drag & drop. Please use the file picker."
+      );
+      return;
+    }
+
+    const selectedFiles = Array.from(e.target.files || []);
+    const validFiles = selectedFiles.filter(
+      (file) => file.type === "application/pdf" && file.size <= 5 * 1024 * 1024
+    );
+    console.log(validFiles);
+
+    if (validFiles.length !== selectedFiles.length) {
+      console.error("Only PDF files under 5MB are allowed.");
+    }
+
+    setFiles(validFiles);
+  };
+
+  const encodeFileAsBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const handleSubmitWithFiles = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const encodedFiles = await Promise.all(
+      files.map(async (file) => ({
+        name: file.name,
+        type: file.type,
+        data: await encodeFileAsBase64(file),
+      }))
+    );
+    submit({ files: encodedFiles });
+  };
 
   return (
     <div
@@ -457,6 +543,44 @@ export default function ChatInterface({
               )}
 
               {/* Formulario de entrada - Última fila en grid o fijo abajo en posición absoluta */}
+              <CardContent className={`${!showPdfInsert ? "hidden" : ""}`}>
+                <form onSubmit={handleSubmitWithFiles} className="space-y-4">
+                  <div
+                    className={`relative flex flex-col items-center justify-center border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 transition-colors hover:border-muted-foreground/50`}
+                  >
+                    <input
+                      type="file"
+                      onChange={handleFileChange}
+                      accept="application/pdf"
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                    <FileUp className="h-8 w-8 mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground text-center">
+                      {files.length > 0 ? (
+                        <span className="font-medium text-foreground">
+                          {files[0].name}
+                        </span>
+                      ) : (
+                        <span>Drop your PDF here or click to browse.</span>
+                      )}
+                    </p>
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={files.length === 0}
+                  >
+                    {isLoading ? (
+                      <span className="flex items-center space-x-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Generating Code Review...</span>
+                      </span>
+                    ) : (
+                      "Generate Code Review"
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
               <form
                 onSubmit={onSubmit}
                 className="p-4 flex gap-2 border-t bg-background z-10"

@@ -6,8 +6,12 @@ export default function CodeReview({
 }: {
   params?: CodeReviewFragment[];
 }) {
-  console.log("Params:", params);
-  return params?.map((result) => (
-    <ReviewTarget key={result.codeBefore} {...result} />
-  ));
+  console.log("Que está llegango al code review:", params);
+  return (
+    <div className="flex flex-col gap-4">
+      {params?.map((result) => (
+        <ReviewTarget key={result.codeBefore} {...result} />
+      ))}
+    </div>
+  );
 }

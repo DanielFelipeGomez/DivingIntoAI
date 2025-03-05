@@ -1,6 +1,10 @@
-import { Check, Copy, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { CodeReviewFragment } from "../ai/code-review-tools/code-review-tool";
+import ReactMarkdown from "react-markdown";
+import rehypeHighlight from "rehype-highlight";
+import remarkGfm from "remark-gfm";
+import { CodeBlock } from "./code-block";
 
 export default function ReviewTarget(props: CodeReviewFragment) {
   console.log("params", props);
@@ -14,25 +18,50 @@ export default function ReviewTarget(props: CodeReviewFragment) {
                 <X className="h-4 w-4" />
                 BEFORE
               </div>
-              <pre className="p-4 text-sm font-mono whitespace-pre-wrap break-all">
-                {props.codeBefore}
-              </pre>
+              <div className="p-4">
+                <ReactMarkdown
+                  rehypePlugins={[rehypeHighlight]}
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    code: ({ className, children }) => {
+                      const match = /language-(\w+)/.exec(
+                        className || "python"
+                      );
+                      return match ? (
+                        <CodeBlock className={className}>{children}</CodeBlock>
+                      ) : (
+                        <code className={className}>{children}</code>
+                      );
+                    },
+                  }}
+                >
+                  {`\`\`\`typescript\n${props.codeBefore}\n\`\`\``}
+                </ReactMarkdown>
+              </div>
             </div>
             <div className="bg-green-50 dark:bg-green-950/50 rounded-lg">
               <div className="flex items-center gap-2 px-4 py-2 text-sm text-green-600 dark:text-green-400 font-medium border-b border-green-100 dark:border-green-900">
                 <Check className="h-4 w-4" />
                 AFTER
               </div>
-              <pre className="p-4 text-sm font-mono whitespace-pre-wrap break-all relative group">
-                {props.codeAfter}
-                <button
-                  onClick={() => navigator.clipboard.writeText(props.codeAfter)}
-                  className="absolute top-2 right-2 p-2 rounded-md opacity-0 group-hover:opacity-100 hover:bg-green-100 dark:hover:bg-green-900 transition-opacity"
-                  aria-label="Copy code"
+              <div className="p-4">
+                <ReactMarkdown
+                  rehypePlugins={[rehypeHighlight]}
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    code: ({ className, children }) => {
+                      const match = /language-(\w+)/.exec(className || "");
+                      return match ? (
+                        <CodeBlock className={className}>{children}</CodeBlock>
+                      ) : (
+                        <code className={className}>{children}</code>
+                      );
+                    },
+                  }}
                 >
-                  <Copy className="h-4 w-4" />
-                </button>
-              </pre>
+                  {`\`\`\`typescript\n${props.codeAfter}\n\`\`\``}
+                </ReactMarkdown>
+              </div>
             </div>
           </div>
           <div className="text-sm text-muted-foreground">
