@@ -25,6 +25,7 @@ import { CodeBlock } from "./code-block";
 import { TicketData } from "../ai/ticket-tools/ticket-generator-tool";
 import { CodeReviewData } from "../ai/code-review-tools/code-review-tool";
 import { codeReviewsSchema } from "@/lib/code-review-schema";
+import WhisperTranscriber from "./whisper-transcriber";
 
 export type modelDataResult = TicketData | CodeReviewData;
 
@@ -599,7 +600,10 @@ export default function ChatInterface({
                     }
                   }}
                 />
-                <Dictaphone setInput={setInput} />
+                <div className="flex space-x-2">
+                  <Dictaphone setInput={setInput} />
+                  <WhisperTranscriber setInput={setInput} />
+                </div>
                 <Button type="submit" size="icon" variant="ghost">
                   <Send className="h-4 w-4" />
                 </Button>
