@@ -10,6 +10,7 @@ import {
   getLabelsForTicket,
   getLimitDateForTicket,
   getPriorityForTicket,
+  createCompleteTicket,
 } from "./ticket-tools/ticket-generator-tool";
 import { Tools } from "./tools.types";
 
@@ -101,4 +102,5 @@ export const toolsList = {
   [Tools.getLabelsForTicket]: getLabelsForTicket,
   [Tools.getLimitDateForTicket]: getLimitDateForTicket,
   [Tools.getPriorityForTicket]: getPriorityForTicket,
+  [Tools.createCompleteTicket]: createCompleteTicket,
 };

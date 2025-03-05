@@ -150,3 +150,12 @@ export const getPriorityForTicket = createTool({
     return priorityData;
   },
 });
+
+export const createCompleteTicket = createTool({
+  description:
+    "Create a complete ticket with all its components based on the user's description. Use this tool when the user requests to create a new ticket or when they provide information for a complete ticket.",
+  parameters: ticketSchema,
+  execute: async function (ticketData: TicketData) {
+    return ticketData;
+  },
+});

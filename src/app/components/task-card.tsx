@@ -231,11 +231,12 @@ export default function TaskCard({
     <Card className="w-full">
       <CardHeader className="relative group">
         <div className="flex justify-between items-center hover:cursor-pointer border hover:border-gray-300 rounded-lg p-2 border-transparent">
-          <input
-            type="text"
+          <textarea
             value={title || "Title"}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full text-2xl font-bold"
+            className="w-full text-2xl font-bold resize-none overflow-hidden"
+            rows={2}
+            style={{ minHeight: "60px" }}
           />
 
           <TooltipProvider>

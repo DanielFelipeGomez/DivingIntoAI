@@ -10,4 +10,5 @@ export enum Tools {
   getLabelsForTicket = "getLabelsForTicket",
   getLimitDateForTicket = "getLimitDateForTicket",
   getPriorityForTicket = "getPriorityForTicket",
+  createCompleteTicket = "createCompleteTicket",
 }

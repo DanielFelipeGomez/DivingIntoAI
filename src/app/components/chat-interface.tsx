@@ -327,12 +327,14 @@ export default function ChatInterface({
       {!inDialog && (
         <>
           {/* Middle Content Area - Solo visible cuando no está en diálogo */}
-          <div className="flex-1 border-r p-4 overflow-auto">
-            {React.isValidElement(children) &&
-              React.cloneElement<ChildComponentProps>(
-                children as React.ReactElement<ChildComponentProps>,
-                { params, contextForModel, setContextForModel }
-              )}
+          <div className="flex-1 border-r overflow-hidden flex flex-col">
+            <div className="flex-1 overflow-auto p-4">
+              {React.isValidElement(children) &&
+                React.cloneElement<ChildComponentProps>(
+                  children as React.ReactElement<ChildComponentProps>,
+                  { params, contextForModel, setContextForModel }
+                )}
+            </div>
           </div>
 
           {/* Resizer - Solo visible cuando no está en diálogo */}
