@@ -53,15 +53,14 @@ interface ChildComponentProps {
 
 export default function ChatInterface({
   children,
-  inDialog = false,
   dialogTitle = "Ask AI",
-  dialogHeaderHeight = 57, // Altura por defecto del header del diálogo
-  dialogFooterHeight = 65, // Altura por defecto del footer del diálogo
+  dialogHeaderHeight = 57,
+  dialogFooterHeight = 65,
   onDataChange,
   showPdfInsert = false,
+  inDialog = false,
 }: {
   children: React.ReactElement<ChildComponentProps>;
-  inDialog?: boolean;
   dialogTitle?: string;
   dialogHeaderHeight?: number;
   dialogFooterHeight?: number;
@@ -70,6 +69,7 @@ export default function ChatInterface({
     contextForModel: Set<string>;
   }) => void;
   showPdfInsert?: boolean;
+  inDialog?: boolean;
 }) {
   const [params, setParams] = React.useState<modelDataResult | undefined>(
     undefined
@@ -78,8 +78,8 @@ export default function ChatInterface({
     new Set()
   );
   const [chatWidth, setChatWidth] = React.useState(400);
-  const [isResizing, setIsResizing] = React.useState(false);
   const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const [isDragging, setIsDragging] = React.useState(false);
   const contextAreaRef = React.useRef<HTMLDivElement>(null);
   const chatContainerRef = React.useRef<HTMLDivElement>(null);
 
@@ -166,53 +166,19 @@ export default function ChatInterface({
     requestAnimationFrame(updateContextHeight);
   }, [contextForModel.size]);
 
-  // Resizer logic
-  const startResizing = React.useCallback((e: React.MouseEvent) => {
-    setIsResizing(true);
-    e.preventDefault();
-  }, []);
-
-  React.useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizing) return;
-
-      const newWidth = window.innerWidth - e.clientX;
-
-      // Actualizar el estado de colapso basado en el ancho
-      setIsCollapsed(newWidth < 50);
-
-      // Limitar solo el ancho máximo
-      const clampedWidth = Math.min(newWidth, 1000);
-      setChatWidth(clampedWidth);
-    };
-
-    const handleMouseUp = () => {
-      setIsResizing(false);
-    };
-
-    if (isResizing) {
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-    }
-
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [isResizing]);
-
   // Efecto específico para ajustar el comportamiento de scroll en el diálogo
   React.useEffect(() => {
-    if (inDialog && chatContainerRef.current) {
+    if (chatContainerRef.current) {
       // Forzar que no haya scroll en el diálogo o sus contenedores padres
       const applyNoScrollToParents = () => {
-        if (!chatContainerRef.current) return;
+        const container = chatContainerRef.current;
+        if (!container) return;
 
         // Aplicar al contenedor del chat
-        chatContainerRef.current.style.overflow = "hidden";
+        container.style.overflow = "hidden";
 
         // Aplicar a los padres hasta el body
-        let parent = chatContainerRef.current.parentElement;
+        let parent = container.parentElement;
         while (parent && parent !== document.body) {
           parent.style.overflow = "hidden";
           if (parent.parentElement) {
@@ -233,7 +199,7 @@ export default function ChatInterface({
         clearTimeout(timeoutId);
       };
     }
-  }, [inDialog]);
+  }, []);
 
   // Notificamos cambios a componentes externos como el diálogo
   React.useEffect(() => {
@@ -316,107 +282,130 @@ export default function ChatInterface({
     submit({ files: encodedFiles });
   };
 
+  React.useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        const newWidth = window.innerWidth - e.clientX;
+        if (newWidth < 200) {
+          setIsCollapsed(true);
+          setChatWidth(4);
+        } else {
+          setIsCollapsed(false);
+          setChatWidth(Math.max(300, Math.min(800, newWidth)));
+        }
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDragging]);
+
+  const handleMouseDown = () => {
+    setIsDragging(true);
+  };
+
   return (
     <div
-      className={`flex ${
-        inDialog ? "h-full max-h-full overflow-hidden" : "h-full"
-      } bg-background relative`}
+      className={`flex h-full bg-background relative overflow-hidden ${
+        isDragging ? "select-none" : ""
+      }`}
       ref={chatContainerRef}
-      style={inDialog ? { overflow: "hidden" } : undefined}
     >
-      {!inDialog && (
-        <>
-          {/* Middle Content Area - Solo visible cuando no está en diálogo */}
-          <div className="flex-1 border-r overflow-hidden flex flex-col">
-            <div className="flex-1 overflow-auto p-4">
-              {React.isValidElement(children) &&
-                React.cloneElement<ChildComponentProps>(
-                  children as React.ReactElement<ChildComponentProps>,
-                  { params, contextForModel, setContextForModel }
-                )}
-            </div>
-          </div>
-
-          {/* Resizer - Solo visible cuando no está en diálogo */}
-          <div
-            className="relative w-1 bg-border hover:bg-primary/50 cursor-col-resize group"
-            onMouseDown={startResizing}
-          >
-            {isCollapsed && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-1/2 -translate-y-1/2 -left-4 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={() => {
-                  setIsCollapsed(false);
-                  setChatWidth(400);
-                }}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        </>
-      )}
-
-      {/* Chat Area - Usando Grid para modo diálogo */}
+      {/* <div className="flex-1 border-r overflow-hidden"> */}
       <div
-        className={`${
-          inDialog
-            ? "grid grid-rows-[auto_1fr_auto] h-full w-full overflow-hidden"
-            : "flex flex-col relative"
-        }`}
-        style={
-          inDialog
-            ? { overflow: "hidden", maxHeight: "100%" }
-            : { width: isCollapsed ? "4px" : `${chatWidth}px` }
+        className={
+          !inDialog
+            ? "flex-1 border-r h-fulloverflow-hidden"
+            : "flex-1 border-r h-[600px] overflow-hidden"
         }
       >
-        {(!isCollapsed || inDialog) && (
+        <div className="h-full overflow-auto p-4">
+          {React.isValidElement(children) &&
+            React.cloneElement<ChildComponentProps>(
+              children as React.ReactElement<ChildComponentProps>,
+              { params, contextForModel, setContextForModel }
+            )}
+        </div>
+      </div>
+
+      {/* Divisor arrastrable */}
+      <div
+        className="w-1 hover:w-1 hover:bg-blue-400 cursor-col-resize transition-colors flex items-center"
+        onMouseDown={handleMouseDown}
+        style={{
+          backgroundColor: isDragging ? "#60A5FA" : "transparent",
+        }}
+      >
+        {isCollapsed && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute left-0 transform -translate-x-full"
+            onClick={() => {
+              setIsCollapsed(false);
+              setChatWidth(400);
+            }}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+
+      {/* Chat Area */}
+      <div
+        // className="flex flex-col relative h-[600px] overflow-hidden"
+        className={
+          !inDialog
+            ? "flex flex-col relative h-full overflow-hidden"
+            : "flex flex-col relative h-[600px] overflow-hidden"
+        }
+        style={{
+          width: isCollapsed ? "4px" : `${chatWidth}px`,
+          transition: isDragging ? "none" : "width 0.3s ease",
+        }}
+      >
+        {!isCollapsed && (
           <>
-            {/* Header - En modo grid es la primera fila */}
-            <div
-              className={`border-b p-4 bg-background z-10 flex-none ${
-                !inDialog ? "absolute top-0 left-0 right-0" : ""
-              }`}
-            >
+            {/* Header */}
+            <div className="border-b p-4 bg-background z-10 flex-none">
               <div className="flex items-center justify-between gap-2">
                 <span>{dialogTitle}</span>
-                {!inDialog && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                      setIsCollapsed(true);
-                      setChatWidth(4);
-                    }}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    setIsCollapsed(true);
+                    setChatWidth(4);
+                  }}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
               </div>
             </div>
 
-            {/* Messages - En modo grid es la fila central con scroll */}
+            {/* Messages */}
             <div
-              className={`${
-                inDialog
-                  ? "overflow-y-auto min-h-0 max-h-full"
-                  : "absolute inset-x-0 overflow-y-auto"
-              }`}
-              style={
-                !inDialog
-                  ? {
-                      top: `${dialogHeaderHeight}px`,
-                      bottom:
-                        contextForModel.size > 0
-                          ? `calc(${dialogFooterHeight}px + var(--context-height, 0px))`
-                          : `${dialogFooterHeight}px`,
-                    }
-                  : { maxHeight: "100%" }
-              }
+              className="overflow-y-auto flex-1"
+              style={{
+                maxHeight: `calc(100% - ${dialogHeaderHeight}px - ${dialogFooterHeight}px${
+                  contextForModel.size > 0
+                    ? " - var(--context-height, 0px)"
+                    : ""
+                })`,
+              }}
             >
-              <div className={`p-4 space-y-4`}>
+              <div className="p-4 space-y-4">
                 {messages.map((message) => (
                   <div
                     key={message.id}
@@ -493,16 +482,11 @@ export default function ChatInterface({
             </div>
 
             {/* Área de filtros y formulario */}
-            <div
-              className={`${
-                inDialog ? "flex-none" : "absolute bottom-0 left-0 right-0"
-              }`}
-            >
+            <div className="absolute bottom-0 left-0 right-0">
               {/* Área de filtros - Justo sobre el área de entrada */}
               {contextForModel.size > 0 && (
                 <div
                   className="border-t bg-background z-10"
-                  style={!inDialog ? { bottom: "65px" } : undefined}
                   ref={contextAreaRef}
                 >
                   <div className="p-4 flex gap-2">
@@ -614,17 +598,6 @@ export default function ChatInterface({
           </>
         )}
       </div>
-
-      {/* Renderizar los hijos cuando está en diálogo - Ocultos pero necesarios para la lógica */}
-      {inDialog && (
-        <div className="hidden">
-          {React.isValidElement(children) &&
-            React.cloneElement<ChildComponentProps>(
-              children as React.ReactElement<ChildComponentProps>,
-              { params, contextForModel, setContextForModel }
-            )}
-        </div>
-      )}
     </div>
   );
 }

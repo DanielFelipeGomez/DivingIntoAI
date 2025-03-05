@@ -596,7 +596,7 @@ export default function TaskCard({
         </div>
       </CardContent>
 
-      {/* Añadir el botón de guardar al final del Card */}
+      {/* Añadir el botón de guardar al final del Card
       <div className="px-6 py-4 border-t">
         <button
           onClick={handleSave}
@@ -604,7 +604,7 @@ export default function TaskCard({
         >
           Save
         </button>
-      </div>
+      </div> */}
     </Card>
   );
 }

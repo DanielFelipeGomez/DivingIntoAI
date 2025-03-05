@@ -196,7 +196,7 @@ export default function TicketsDashboard() {
                 </Button>
               </div>
               <div className="flex-1 overflow-auto">
-                <ChatInterface>
+                <ChatInterface inDialog={true}>
                   <TaskCard
                     params={undefined}
                     contextForModel={new Set()}
