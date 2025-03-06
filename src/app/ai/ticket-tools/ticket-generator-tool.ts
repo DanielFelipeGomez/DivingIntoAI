@@ -40,19 +40,9 @@ export const ticketSchema = z.object({
 
 export type TicketData = z.infer<typeof ticketSchema>;
 
-// export const getTicketData = createTool({
-//   description:
-//     "Generate the target data for a table based on a description given from the user",
-//   parameters: ticketSchema,
-//   execute: async function (ticketData: TicketData) {
-//     return ticketData;
-//   },
-// });
-
 // Individual parts of the ticket
 
 export const getTitleForTicket = createTool({
-  // description: `Generate a new title for the ticket based on the user's request, ONLY USE THIS TOOL IF THE USER ASKS FOR ${Tools.getTitleForTicket}`,
   description:
     "Generate a new title for the ticket based on the user's request, only use this tool if the user request modify only the title description",
   parameters: z.object({
@@ -64,7 +54,6 @@ export const getTitleForTicket = createTool({
 });
 
 export const getDescriptionForTicket = createTool({
-  // description: `Generate a new description for the ticket based on the user's request, ONLY USE THIS TOOL IF THE USER ASKS FOR ${Tools.getDescriptionForTicket}`,
   description:
     "Generate a new description for the ticket based on the user's request, only use this tool if the user request modify only the description",
   parameters: z.object({
@@ -76,7 +65,6 @@ export const getDescriptionForTicket = createTool({
 });
 
 export const getRequirementsForTicket = createTool({
-  // description: `Generate a new requirements for the ticket based on the user's request, ONLY USE THIS TOOL IF THE USER ASKS FOR ${Tools.getRequirementsForTicket}`,
   description:
     "Generate a new requirements for the ticket based on the user's request, only use this tool if the user request modify only the requirements",
   parameters: z.object({
@@ -88,7 +76,6 @@ export const getRequirementsForTicket = createTool({
 });
 
 export const getReproductionStepsForTicket = createTool({
-  // description: `Generate a new reproduction steps for the ticket based on the user's request, ONLY USE THIS TOOL IF THE USER ASKS FOR ${Tools.getReproductionStepsForTicket}`,
   description:
     "Generate a new reproduction steps for the ticket based on the user's request, only use this tool if the user request modify only the reproduction steps",
   parameters: z.object({
@@ -104,7 +91,6 @@ export const getReproductionStepsForTicket = createTool({
 });
 
 export const getCodeForTicket = createTool({
-  // description: `Generate a new code for the ticket based on the user's request, ONLY USE THIS TOOL IF THE USER ASKS FOR ${Tools.getCodeForTicket}`,
   description:
     "Generate a new code for the ticket based on the user's request, only use this tool if the user request modify only the code",
   parameters: z.object({
@@ -116,7 +102,6 @@ export const getCodeForTicket = createTool({
 });
 
 export const getLabelsForTicket = createTool({
-  // description: `Generate a new labels for the ticket based on the user's request, ONLY USE THIS TOOL IF THE USER ASKS FOR ${Tools.getLabelsForTicket}`,
   description:
     "Generate a new labels for the ticket based on the user's request, only use this tool if the user request modify only the labels",
   parameters: z.object({
@@ -128,7 +113,6 @@ export const getLabelsForTicket = createTool({
 });
 
 export const getLimitDateForTicket = createTool({
-  // description: `Generate a new limit date for the ticket based on the user's request, ONLY USE THIS TOOL IF THE USER ASKS FOR ${Tools.getLimitDateForTicket}`,
   description:
     "Generate a new limit date on format YYYY-MM-DD for the ticket based on the user's request, only use this tool if the user request modify only the limit date",
   parameters: z.object({
@@ -140,7 +124,6 @@ export const getLimitDateForTicket = createTool({
 });
 
 export const getPriorityForTicket = createTool({
-  // description: `Generate a new priority for the ticket based on the user's request, ONLY USE THIS TOOL IF THE USER ASKS FOR ${Tools.getPriorityForTicket}`,
   description:
     "Generate a new priority for the ticket based on the user's request, only use this tool if the user request modify only the priority",
   parameters: z.object({

@@ -11,4 +11,4 @@ const googleModel = google("gemini-1.5-flash");
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const anthropicModel = anthropic("claude-3-5-sonnet-20240620");
 
-export const chatModel = openaiModel;
+export const chatModel = googleModel;

@@ -14,7 +14,7 @@ export async function POST(request: Request) {
 
     const result = streamText({
       system: `
-      You are a expert in ticket management and code review.
+      You are a expert in ticket management and code reviewer
       For tickets:
       - Use createCompleteTicket when the user wants to create a new ticket, probably if you use this tool, you don't need to use other tools.
       - Use getTitleForTicket only when the user wants to modify the title
@@ -41,8 +41,7 @@ export async function POST(request: Request) {
       throw new Error("No se pudo generar una respuesta del modelo");
     }
 
-    const response = result.toDataStreamResponse();
-    return response;
+    return result.toDataStreamResponse();
   } catch (error) {
     console.error("Error detallado en el servidor:", error);
 

@@ -1,30 +1,26 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import ChatInterface from "../components/chat-interface";
+import CodeReview from "../components/code-review";
 import ProtectedRoute from "../components/protected-route";
-import TaskCard from "../components/task-card";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "../context/auth-context";
 
-export default function DefinePage() {
+export default function ReviewCodePage() {
   const { logout } = useAuth();
 
   return (
     <ProtectedRoute>
-      <div className="flex flex-col min-h-screen">
+      <div className="flex flex-col h-screen">
         <header className="bg-white shadow-sm p-4 flex justify-between items-center border-b border-gray-200">
-          <h1 className="text-xl font-semibold">DivingIntoAI</h1>
+          <h1 className="text-xl font-semibold">Code Review</h1>
           <Button variant="outline" onClick={logout}>
-            Cerrar Sesión
+            Logout
           </Button>
         </header>
         <main className="flex-1">
-          <ChatInterface>
-            <TaskCard
-              params={undefined}
-              contextForModel={new Set()}
-              setContextForModel={() => {}}
-            />
+          <ChatInterface showPdfInsert={true}>
+            <CodeReview params={undefined} />
           </ChatInterface>
         </main>
       </div>

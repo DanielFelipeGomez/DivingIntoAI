@@ -14,7 +14,7 @@ export default function Sidebar() {
   const menuItems = [
     {
       text: "Code Review",
-      route: "/review/code",
+      route: "/code",
       icon: <FileSearch className="h-5 w-5" />,
     },
     {

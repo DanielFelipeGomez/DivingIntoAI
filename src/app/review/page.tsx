@@ -1,6 +1,6 @@
 "use client";
 
-import TicketsDashboard from "./dashboard";
+import TicketsDashboard from "../components/dashboard";
 
 export default function ReviewPage() {
   return <TicketsDashboard />;

@@ -1,17 +1,29 @@
 ## code review:
 
-generame una code review del siguiente codigo:
+generame una code review del siguiente codigo en 4 fragmentos:
 
-function HacerAlgoRaro(x: number, y: number): void {
-let resultado = x + y;
-console.log("Este console.log es accidental y no debería estar aquí");
-console.log(`El resultado es: ${resultado}`);
-}
-
-let numero = 10;
-numero = 20;
-
-HacerAlgoRaro(numero, 5);
+x = 10
+y = 20
+z = 30
+def add():
+global x, y
+return x + y
+def sub():
+global z
+return z - x
+def mult():
+a = 5
+b = 6
+c = 7
+return a _ b _ c
+def div():
+p = 100
+q = 5
+return p / q
+print(add())
+print(sub())
+print(mult())
+print(div())
 
 ## Generate a ticket definition
 
