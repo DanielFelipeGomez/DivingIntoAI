@@ -33,6 +33,7 @@ interface ChildComponentProps {
   params: modelDataResult | undefined;
   contextForModel: Set<string>;
   setContextForModel: (tools: Set<string>) => void;
+  isLoading: boolean;
 }
 
 // const getToolMessage = (messages: Message[], toolName: Tools) => {
@@ -83,7 +84,13 @@ export default function ChatInterface({
   const contextAreaRef = React.useRef<HTMLDivElement>(null);
   const chatContainerRef = React.useRef<HTMLDivElement>(null);
 
-  const { messages, input, setInput, handleSubmit } = useChat({
+  const {
+    messages,
+    input,
+    setInput,
+    handleSubmit,
+    isLoading: isLoadingChat,
+  } = useChat({
     onResponse: (response) => {
       console.log("response", response);
     },
@@ -101,7 +108,6 @@ export default function ChatInterface({
     handleSubmit(e);
   };
 
-  console.log("messages", messages);
   React.useEffect(() => {
     if (messages.length > 0) {
       // const targetDataMessage = getToolMessage(messages, Tools.getTicketData);
@@ -209,11 +215,15 @@ export default function ChatInterface({
   }, [params, contextForModel, onDataChange]);
 
   const [files, setFiles] = React.useState<File[]>([]);
+  const [pdfComplementary, setPdfComplementary] = React.useState<
+    FileList | undefined
+  >(undefined);
+  const pdfComplementaryInputRef = React.useRef<HTMLInputElement>(null);
 
   const {
     submit,
     object: partialQuestions,
-    isLoading,
+    isLoading: isLoadingCodeReviewPDF,
   } = experimental_useObject({
     api: "/api/code-review",
     schema: codeReviewsSchema,
@@ -223,17 +233,11 @@ export default function ChatInterface({
       setFiles([]);
     },
     onFinish: ({ object }) => {
-      console.log("____________object_______________", object);
-
       setParams(object as unknown as CodeReviewData);
     },
   });
 
   React.useEffect(() => {
-    console.log(
-      "____________partialQuestions_______________",
-      partialQuestions
-    );
     setParams(partialQuestions as unknown as CodeReviewData);
   }, [partialQuestions]);
 
@@ -279,7 +283,11 @@ export default function ChatInterface({
         data: await encodeFileAsBase64(file),
       }))
     );
-    submit({ files: encodedFiles });
+    try {
+      submit({ files: encodedFiles });
+    } catch (error) {
+      console.error("Error submitting files:", error);
+    }
   };
 
   React.useEffect(() => {
@@ -334,7 +342,12 @@ export default function ChatInterface({
           {React.isValidElement(children) &&
             React.cloneElement<ChildComponentProps>(
               children as React.ReactElement<ChildComponentProps>,
-              { params, contextForModel, setContextForModel }
+              {
+                params,
+                contextForModel,
+                setContextForModel,
+                isLoading: isLoadingChat,
+              }
             )}
         </div>
       </div>
@@ -530,7 +543,10 @@ export default function ChatInterface({
               )}
 
               {/* Formulario de entrada - Última fila en grid o fijo abajo en posición absoluta */}
-              <CardContent className={`${!showPdfInsert ? "hidden" : ""}`}>
+
+              <CardContent
+                className={`${!showPdfInsert ? "hidden" : " border-t"}`}
+              >
                 <form onSubmit={handleSubmitWithFiles} className="space-y-4">
                   <div
                     className={`relative flex flex-col items-center justify-center border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 transition-colors hover:border-muted-foreground/50`}
@@ -557,7 +573,7 @@ export default function ChatInterface({
                     className="w-full"
                     disabled={files.length === 0}
                   >
-                    {isLoading ? (
+                    {isLoadingCodeReviewPDF ? (
                       <span className="flex items-center space-x-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         <span>Generating Code Review...</span>
@@ -568,6 +584,36 @@ export default function ChatInterface({
                   </Button>
                 </form>
               </CardContent>
+              <form
+                onSubmit={(event) => {
+                  handleSubmit(event, {
+                    experimental_attachments: pdfComplementary,
+                  });
+
+                  setPdfComplementary(undefined);
+
+                  if (pdfComplementaryInputRef.current) {
+                    pdfComplementaryInputRef.current.value = "";
+                  }
+                }}
+                className="p-4 flex flex-col gap-2 border-t bg-background z-10"
+              >
+                <input
+                  type="file"
+                  onChange={(event) => {
+                    if (event.target.files) {
+                      setPdfComplementary(event.target.files);
+                    }
+                  }}
+                  multiple
+                  ref={pdfComplementaryInputRef}
+                />
+                <Button type="submit" variant="default" className="w-full">
+                  Send with PDF
+                  <Send className="h-4 w-4" />
+                </Button>
+              </form>
+
               <form
                 onSubmit={onSubmit}
                 className="p-4 flex gap-2 border-t bg-background z-10"
