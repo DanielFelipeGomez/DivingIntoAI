@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import TaskCard from "../components/task-card";
+import TaskCard, { handleSave } from "../components/task-card";
 import ProtectedRoute from "../components/protected-route";
 import { useAuth } from "../context/auth-context";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,7 @@ import ChatInterface from "../components/chat-interface";
 // Definition of the ticket interface
 interface Ticket {
   id: number;
+  title: string;
   description: string;
   requirenments?: string;
   reproductionSteps?: string;
@@ -54,6 +55,22 @@ export default function TicketsDashboard() {
       setLoading(false);
     }
   };
+
+  const [showNotification, setShowNotification] = useState(false);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (showNotification) {
+      timer = setTimeout(() => {
+        setShowNotification(false);
+      }, 3000); // 3 seconds
+    }
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, [showNotification]);
 
   // Load tickets when component mounts
   useEffect(() => {
@@ -100,6 +117,7 @@ export default function TicketsDashboard() {
                     <thead>
                       <tr className="bg-gray-100">
                         <th className="p-2 text-left border">ID</th>
+                        <th className="p-2 text-left border">Title</th>
                         <th className="p-2 text-left border">Description</th>
                         <th className="p-2 text-left border">Priority</th>
                         <th className="p-2 text-left border">Due Date</th>
@@ -113,6 +131,7 @@ export default function TicketsDashboard() {
                           className="border-b hover:bg-gray-50"
                         >
                           <td className="p-2 border">{ticket.id}</td>
+                          <td className="p-2 border">{ticket.title}</td>
                           <td className="p-2 border">{ticket.description}</td>
                           <td className="p-2 border">
                             <Badge
@@ -157,8 +176,12 @@ export default function TicketsDashboard() {
                                   <Badge
                                     key={label.id}
                                     style={{
-                                      backgroundColor: label.colors.background,
-                                      color: label.colors.text,
+                                      backgroundColor:
+                                        label.colors?.background ||
+                                        "hsl(270, 70%, 90%)",
+                                      color:
+                                        label.colors?.text ||
+                                        "hsl(270, 70%, 30%)",
                                     }}
                                   >
                                     {label.text}
@@ -180,6 +203,12 @@ export default function TicketsDashboard() {
             </CardContent>
           </Card>
         </main>
+
+        {showNotification && (
+          <div className="fixed bottom-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded shadow-lg transition-opacity duration-500">
+            <p className="font-medium">Ticket created successfully!</p>
+          </div>
+        )}
 
         {showTaskCard && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -214,8 +243,14 @@ export default function TicketsDashboard() {
                 <Button
                   variant="default"
                   onClick={() => {
-                    setShowTaskCard(false);
-                    fetchTickets(); // Reload tickets after creating a new one
+                    try {
+                      handleSave();
+                      setShowNotification(true);
+                      setShowTaskCard(false);
+                      fetchTickets(); // Reload tickets after creating a new one
+                    } catch (error) {
+                      console.error("Error saving ticket:", error);
+                    }
                   }}
                 >
                   Save and Close

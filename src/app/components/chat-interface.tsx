@@ -56,8 +56,7 @@ export default function ChatInterface({
   children,
   dialogTitle = "Ask AI",
   dialogHeaderHeight = 57,
-  dialogFooterHeight = 65,
-  onDataChange,
+  dialogFooterHeight = 200,
   showPdfInsert = false,
   inDialog = false,
 }: {
@@ -65,10 +64,6 @@ export default function ChatInterface({
   dialogTitle?: string;
   dialogHeaderHeight?: number;
   dialogFooterHeight?: number;
-  onDataChange?: (data: {
-    params: modelDataResult | undefined;
-    contextForModel: Set<string>;
-  }) => void;
   showPdfInsert?: boolean;
   inDialog?: boolean;
 }) {
@@ -110,39 +105,6 @@ export default function ChatInterface({
 
   React.useEffect(() => {
     if (messages.length > 0) {
-      // const targetDataMessage = getToolMessage(messages, Tools.getTicketData);
-
-      // const codeReviewMessage = getToolMessage(
-      //   messages,
-      //   Tools.getCodeReviewData
-      // );
-
-      // const titleMessage = getToolMessage(messages, Tools.getTitleForTicket);
-      // const descriptionMessage = getToolMessage(
-      //   messages,
-      //   Tools.getDescriptionForTicket
-      // );
-
-      // console.log("targetDataMessage", targetDataMessage);
-      // console.log("codeReviewMessage", codeReviewMessage);
-
-      // if (targetDataMessage) {
-      //   console.log("REUSLT HERE", targetDataMessage);
-      //   setParams(targetDataMessage as TicketData);
-      // }
-
-      // if (codeReviewMessage) {
-      //   setParams(codeReviewMessage as CodeReviewData);
-      // }
-
-      // if (titleMessage) {
-      //   setParams(titleMessage as TicketData);
-      // }
-
-      // if (descriptionMessage) {
-      //   setParams(descriptionMessage as TicketData);
-      // }
-
       // get last tool and define the params
       const lastTool = messages[messages.length - 1].toolInvocations?.[0];
       if (lastTool && lastTool.state === "result") {
@@ -151,68 +113,6 @@ export default function ChatInterface({
       }
     }
   }, [messages, setParams]);
-
-  // Efecto para actualizar la altura del área de contexto y adaptarse al contenedor padre
-  React.useEffect(() => {
-    const updateContextHeight = () => {
-      if (contextAreaRef.current) {
-        document.documentElement.style.setProperty(
-          "--context-height",
-          `${contextAreaRef.current.offsetHeight}px`
-        );
-      } else {
-        document.documentElement.style.setProperty("--context-height", "0px");
-      }
-    };
-
-    // Actualizar altura cuando cambia el contexto
-    updateContextHeight();
-
-    // También actualizar en la próxima renderización para capturar cualquier cambio de tamaño
-    requestAnimationFrame(updateContextHeight);
-  }, [contextForModel.size]);
-
-  // Efecto específico para ajustar el comportamiento de scroll en el diálogo
-  React.useEffect(() => {
-    if (chatContainerRef.current) {
-      // Forzar que no haya scroll en el diálogo o sus contenedores padres
-      const applyNoScrollToParents = () => {
-        const container = chatContainerRef.current;
-        if (!container) return;
-
-        // Aplicar al contenedor del chat
-        container.style.overflow = "hidden";
-
-        // Aplicar a los padres hasta el body
-        let parent = container.parentElement;
-        while (parent && parent !== document.body) {
-          parent.style.overflow = "hidden";
-          if (parent.parentElement) {
-            parent = parent.parentElement;
-          } else {
-            break;
-          }
-        }
-      };
-
-      // Aplicar inmediatamente
-      applyNoScrollToParents();
-
-      // Y también después de un pequeño retraso para asegurar que se aplica después de cualquier renderizado
-      const timeoutId = setTimeout(applyNoScrollToParents, 100);
-
-      return () => {
-        clearTimeout(timeoutId);
-      };
-    }
-  }, []);
-
-  // Notificamos cambios a componentes externos como el diálogo
-  React.useEffect(() => {
-    if (onDataChange) {
-      onDataChange({ params, contextForModel });
-    }
-  }, [params, contextForModel, onDataChange]);
 
   const [files, setFiles] = React.useState<File[]>([]);
   const [pdfComplementary, setPdfComplementary] = React.useState<
@@ -330,7 +230,6 @@ export default function ChatInterface({
       }`}
       ref={chatContainerRef}
     >
-      {/* <div className="flex-1 border-r overflow-hidden"> */}
       <div
         className={
           !inDialog
@@ -352,7 +251,7 @@ export default function ChatInterface({
         </div>
       </div>
 
-      {/* Divisor arrastrable */}
+      {/* Draggable divider */}
       <div
         className="w-1 hover:w-1 hover:bg-blue-400 cursor-col-resize transition-colors flex items-center"
         onMouseDown={handleMouseDown}
@@ -377,7 +276,6 @@ export default function ChatInterface({
 
       {/* Chat Area */}
       <div
-        // className="flex flex-col relative h-[600px] overflow-hidden"
         className={
           !inDialog
             ? "flex flex-col relative h-full overflow-hidden"
@@ -494,9 +392,9 @@ export default function ChatInterface({
               </div>
             </div>
 
-            {/* Área de filtros y formulario */}
+            {/* Filters and form area */}
             <div className="absolute bottom-0 left-0 right-0">
-              {/* Área de filtros - Justo sobre el área de entrada */}
+              {/* Filters area - Just above the input area */}
               {contextForModel.size > 0 && (
                 <div
                   className="border-t bg-background z-10"
@@ -542,8 +440,9 @@ export default function ChatInterface({
                 </div>
               )}
 
-              {/* Formulario de entrada - Última fila en grid o fijo abajo en posición absoluta */}
+              {/* Input form - Last row in grid or fixed below in absolute position */}
 
+              {/* Pdf form example of new endpoint */}
               <CardContent
                 className={`${!showPdfInsert ? "hidden" : " border-t"}`}
               >
@@ -584,6 +483,8 @@ export default function ChatInterface({
                   </Button>
                 </form>
               </CardContent>
+
+              {/* Pdf form */}
               <form
                 onSubmit={(event) => {
                   handleSubmit(event, {
@@ -614,6 +515,7 @@ export default function ChatInterface({
                 </Button>
               </form>
 
+              {/* Input form */}
               <form
                 onSubmit={onSubmit}
                 className="p-4 flex gap-2 border-t bg-background z-10"

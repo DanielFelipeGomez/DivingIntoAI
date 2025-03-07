@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { X, ChevronDown, CircleFadingPlus } from "lucide-react";
 import dayjs, { Dayjs } from "dayjs";
 import ReactMarkdown from "react-markdown";
@@ -15,6 +15,67 @@ import {
 } from "@/components/ui/tooltip";
 import { Tools } from "../ai/tools.types";
 import { supabase } from "@/lib/supabase";
+
+type TicketDataSubmit = Partial<Omit<TicketData, "labels">> & {
+  labels: Array<{
+    id: number;
+    text: string;
+    colors: {
+      background: string;
+      text: string;
+    };
+  }>;
+};
+
+let currentState: TicketDataSubmit = {
+  title: "",
+  description: "",
+  requirements: "",
+  reproductionSteps: "",
+  limitDate: "",
+  priority: "Medium" as Priority,
+  labels: [] as Array<{
+    id: number;
+    text: string;
+    colors: {
+      background: string;
+      text: string;
+    };
+  }>,
+  code: "",
+};
+
+export const handleSave = async () => {
+  const ticketData: TicketDataSubmit = {
+    title: currentState.title,
+    description: currentState.description,
+    requirements: currentState.requirements,
+    reproductionSteps: currentState.reproductionSteps,
+    limitDate: currentState.limitDate,
+    priority: currentState.priority,
+    labels: currentState.labels,
+    code: currentState.code,
+  };
+
+  try {
+    await supabase
+      .from("Tickets")
+      .insert([
+        {
+          title: ticketData.title,
+          description: ticketData.description,
+          requirenments: ticketData.requirements,
+          reproductionSteps: ticketData.reproductionSteps,
+          limitDate: ticketData.limitDate,
+          priority: ticketData.priority,
+          labels: ticketData.labels,
+        },
+      ])
+      .select();
+  } catch (err) {
+    console.error("Error en la operación de guardado:", err);
+  }
+};
 
 // Función auxiliar para generar colores aleatorios pastel
 const getRandomPastelColor = () => {
@@ -67,24 +128,6 @@ const priorities: PriorityOption[] = [
   },
 ];
 
-interface TicketDataSaved {
-  title: string;
-  description: string;
-  requirements: string;
-  reproductionSteps: string;
-  dueDate: Date | null;
-  priority: Priority;
-  tags: Array<{
-    id: number;
-    text: string;
-    colors: {
-      background: string;
-      text: string;
-    };
-  }>;
-  code: string;
-}
-
 export default function TaskCard({
   params,
   contextForModel,
@@ -94,7 +137,7 @@ export default function TaskCard({
   contextForModel: Set<string>;
   setContextForModel: (tools: Set<string>) => void;
 }) {
-  const [tags, setTags] = useState([
+  const [labels, setLabels] = useState([
     {
       id: 1,
       text: "Bug",
@@ -114,7 +157,7 @@ export default function TaskCard({
   const [newTag, setNewTag] = useState("");
   const [priority, setPriority] = useState<Priority>("Medium");
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
-  const [dueDate, setDueDate] = useState<Dayjs | null>(null);
+  const [limitDate, setLimitDate] = useState<Dayjs | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [requirements, setRequirements] = useState("");
@@ -123,15 +166,32 @@ export default function TaskCard({
   const [editedCodeMode, setEditedCodeMode] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  // Referencias para los textareas
-  const descriptionRef = useRef<HTMLTextAreaElement>(null);
-  const requirementsRef = useRef<HTMLTextAreaElement>(null);
-  const reproductionStepsRef = useRef<HTMLTextAreaElement>(null);
-
   // Usar useEffect para manejar la hidratación
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    currentState = {
+      title,
+      description,
+      requirements,
+      reproductionSteps,
+      limitDate: limitDate?.toISOString() || "",
+      priority,
+      labels,
+      code,
+    };
+  }, [
+    title,
+    description,
+    requirements,
+    reproductionSteps,
+    limitDate,
+    priority,
+    labels,
+    code,
+  ]);
 
   // Usar los datos del chat para actualizar la tarjeta
   useEffect(() => {
@@ -143,13 +203,13 @@ export default function TaskCard({
         setRequirements(params.requirements);
       if (params.reproductionSteps !== undefined)
         setReproductionSteps(params.reproductionSteps);
-      if (params.limitDate !== undefined) setDueDate(dayjs(params.limitDate));
+      if (params.limitDate !== undefined) setLimitDate(dayjs(params.limitDate));
       if (params.priority !== undefined)
         setPriority(params.priority as Priority);
       if (params.code !== undefined) setCode(params.code);
 
       if (params.labels && params.labels.length > 0) {
-        setTags(
+        setLabels(
           params.labels.map((label: string, index: number) => ({
             id: index,
             text: label,
@@ -169,8 +229,8 @@ export default function TaskCard({
 
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && newTag.trim()) {
-      setTags([
-        ...tags,
+      setLabels([
+        ...labels,
         {
           id: Date.now(),
           text: newTag.trim(),
@@ -181,50 +241,8 @@ export default function TaskCard({
     }
   };
 
-  const handleDeleteTag = (tagId: number) => {
-    setTags(tags.filter((tag) => tag.id !== tagId));
-  };
-
-  const handleSave = async () => {
-    const ticketData: TicketDataSaved = {
-      title: "Add functionality to Rebalance Dashboard",
-      description: descriptionRef.current?.value || "",
-      requirements: requirementsRef.current?.value || "",
-      reproductionSteps: reproductionStepsRef.current?.value || "",
-      dueDate: dueDate?.toDate() || null,
-      priority,
-      tags,
-      code,
-    };
-
-    try {
-      const { data, error } = await supabase
-        .from("Tickets")
-        .insert([
-          {
-            description: ticketData.description,
-            requirenments: ticketData.requirements,
-            reproductionSteps: ticketData.reproductionSteps,
-            limitDate: ticketData.dueDate,
-            priority: ticketData.priority,
-            labels: ticketData.tags,
-          },
-        ])
-        .select();
-
-      if (error) {
-        console.error("Error al guardar el ticket:", error);
-        alert(
-          "Error al guardar el ticket. Consulta la consola para más detalles."
-        );
-      } else {
-        console.log("Ticket guardado exitosamente:", data);
-        alert("Ticket guardado exitosamente");
-      }
-    } catch (err) {
-      console.error("Error en la operación de guardado:", err);
-      alert("Error inesperado. Consulta la consola para más detalles.");
-    }
+  const handleDeleteLabel = (labelId: number) => {
+    setLabels(labels.filter((label) => label.id !== labelId));
   };
 
   return (
@@ -291,9 +309,9 @@ export default function TaskCard({
               </TooltipProvider>
             </div>
             <textarea
-              ref={descriptionRef}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               className="border border-dashed border-muted-foreground/25 rounded-lg p-4 w-full hover:border-gray-300 transition-colors"
-              defaultValue={description}
               placeholder="Enter a detailed description..."
             />
           </div>
@@ -326,9 +344,9 @@ export default function TaskCard({
               </TooltipProvider>
             </div>
             <textarea
-              ref={requirementsRef}
+              value={requirements}
+              onChange={(e) => setRequirements(e.target.value)}
               className="border border-dashed border-muted-foreground/25 rounded-lg p-4 w-full hover:border-gray-300 transition-colors"
-              defaultValue={requirements}
               placeholder="List the requirements..."
             />
           </div>
@@ -361,9 +379,9 @@ export default function TaskCard({
               </TooltipProvider>
             </div>
             <textarea
-              ref={reproductionStepsRef}
+              value={reproductionSteps}
+              onChange={(e) => setReproductionSteps(e.target.value)}
               className="border border-dashed border-muted-foreground/25 rounded-lg p-4 w-full hover:border-gray-300 transition-colors"
-              defaultValue={reproductionSteps}
               placeholder="Describe the steps to reproduce..."
             />
           </div>
@@ -416,7 +434,7 @@ export default function TaskCard({
         <div className="space-y-6">
           <div className="space-y-2">
             <div className="flex justify-between items-center group">
-              <h3 className="text-lg font-semibold">Due Date</h3>
+              <h3 className="text-lg font-semibold">Limit Date</h3>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -429,7 +447,7 @@ export default function TaskCard({
                             Tools.getLimitDateForTicket,
                           ])
                         );
-                        console.log("dueDateSection");
+                        console.log("limitDateSection");
                       }}
                     >
                       <CircleFadingPlus className="w-5 h-5" />
@@ -444,10 +462,10 @@ export default function TaskCard({
             <div className="flex items-center gap-2 text-muted-foreground">
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
-                  label="Due Date"
-                  value={dueDate}
+                  label="Limit Date"
+                  value={limitDate}
                   className="border border-dashed border-muted-foreground/25 rounded-lg p-4 w-full hover:border-gray-300 transition-colors"
-                  onChange={(newValue: Dayjs | null) => setDueDate(newValue)}
+                  onChange={(newValue: Dayjs | null) => setLimitDate(newValue)}
                   slotProps={{
                     textField: {
                       size: "small",
@@ -564,18 +582,18 @@ export default function TaskCard({
             </div>
             <div className="space-y-2">
               <div className="flex flex-wrap gap-2">
-                {tags.map((tag) => (
+                {labels.map((label) => (
                   <div
-                    key={tag.id}
+                    key={label.id}
                     className="flex items-center gap-1 rounded-full px-3 py-1"
                     style={{
-                      backgroundColor: tag.colors.background,
-                      color: tag.colors.text,
+                      backgroundColor: label.colors.background,
+                      color: label.colors.text,
                     }}
                   >
-                    <span>{tag.text}</span>
+                    <span>{label.text}</span>
                     <button
-                      onClick={() => handleDeleteTag(tag.id)}
+                      onClick={() => handleDeleteLabel(label.id)}
                       className="hover:opacity-75"
                     >
                       <X size={14} />

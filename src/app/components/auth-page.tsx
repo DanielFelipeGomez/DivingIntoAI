@@ -49,11 +49,11 @@ export default function AuthPage() {
       if (success) {
         router.push("/review");
       } else {
-        setError("Credenciales inválidas. Por favor, intenta de nuevo.");
+        setError("Invalid credentials. Please try again.");
       }
     } catch (error) {
-      console.error("Error de autenticación:", error);
-      setError("Error al iniciar sesión. Por favor, intenta de nuevo.");
+      console.error("Authentication error:", error);
+      setError("Error logging in. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -71,18 +71,16 @@ export default function AuthPage() {
         className="w-full max-w-md"
       >
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
-          <TabsTrigger value="signup">Registrarse</TabsTrigger>
+          <TabsTrigger value="login">Login</TabsTrigger>
+          <TabsTrigger value="signup">Signup</TabsTrigger>
         </TabsList>
 
         <TabsContent value="login">
           <Card>
             <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl font-bold">
-                Iniciar Sesión
-              </CardTitle>
+              <CardTitle className="text-2xl font-bold">Login</CardTitle>
               <CardDescription>
-                Ingresa tus credenciales para acceder
+                Enter your credentials to access
               </CardDescription>
             </CardHeader>
             <form onSubmit={handleSubmit}>
@@ -93,23 +91,23 @@ export default function AuthPage() {
                   </div>
                 )}
                 <div className="space-y-2">
-                  <Label htmlFor="email">Correo Electrónico</Label>
+                  <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="Ingresa tu correo electrónico"
+                    placeholder="Enter your email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password">Contraseña</Label>
+                  <Label htmlFor="password">Password</Label>
                   <div className="relative">
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
-                      placeholder="Ingresa tu contraseña"
+                      placeholder="Enter your password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
@@ -127,9 +125,7 @@ export default function AuthPage() {
                         <EyeIcon className="h-4 w-4" />
                       )}
                       <span className="sr-only">
-                        {showPassword
-                          ? "Ocultar contraseña"
-                          : "Mostrar contraseña"}
+                        {showPassword ? "Hide password" : "Show password"}
                       </span>
                     </Button>
                   </div>
@@ -137,7 +133,7 @@ export default function AuthPage() {
               </CardContent>
               <CardFooter>
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Iniciando sesión..." : "Iniciar sesión"}
+                  {isLoading ? "Logging in..." : "Login"}
                 </Button>
               </CardFooter>
             </form>
