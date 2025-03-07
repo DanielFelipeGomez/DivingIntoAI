@@ -9,6 +9,9 @@ const openaiModel = openai("gpt-3.5-turbo");
 const googleModel = google("gemini-1.5-flash");
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
+const googleModelPdfSupport = google("gemini-2.0-flash-001");
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const anthropicModel = anthropic("claude-3-5-sonnet-20240620");
 
 export const chatModel = anthropicModel;
