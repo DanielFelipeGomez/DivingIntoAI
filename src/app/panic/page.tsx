@@ -16,19 +16,6 @@ export default function PanicPage() {
 
           <section>
             <h3 className="text-xl font-semibold mb-3">
-              Technical disadvantages
-            </h3>
-            <ul className="list-disc pl-6 space-y-2">
-              <li>Significant increase in the size of the JavaScript bundle</li>
-              <li>Higher initial load time for users</li>
-              <li>Dependence on external services for AI processing</li>
-              <li>Possible latency issues in AI responses</li>
-              <li>Additional complexity in the application architecture</li>
-            </ul>
-          </section>
-
-          <section>
-            <h3 className="text-xl font-semibold mb-3">
               Economic disadvantages
             </h3>
             <ul className="list-disc pl-6 space-y-2">
@@ -81,21 +68,6 @@ export default function PanicPage() {
           <h2 className="text-2xl font-bold text-green-600 mb-4">
             Solutions & Tips
           </h2>
-
-          <section>
-            <h3 className="text-xl font-semibold mb-3">Technical solutions</h3>
-            <ul className="list-disc pl-6 space-y-2">
-              <li>Implement lazy loading for AI components</li>
-              <li>
-                Use server-side processing when possible to reduce client load
-              </li>
-              <li>Implement caching strategies for common AI requests</li>
-              <li>
-                Set up fallback mechanisms for when AI services are unavailable
-              </li>
-              <li>Consider edge computing options for faster response times</li>
-            </ul>
-          </section>
 
           <section>
             <h3 className="text-xl font-semibold mb-3">Economic strategies</h3>
