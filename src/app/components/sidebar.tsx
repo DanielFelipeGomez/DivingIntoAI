@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Menu, FileSearch, TicketCheck } from "lucide-react";
+import { Menu, FileSearch, TicketCheck, Bomb } from "lucide-react";
 
 export default function Sidebar() {
   const [isMenuCollapsed, setIsMenuCollapsed] = useState(true);
@@ -21,6 +21,11 @@ export default function Sidebar() {
       text: "Tickets Dashboard",
       route: "/review",
       icon: <TicketCheck className="h-5 w-5" />,
+    },
+    {
+      text: "Panic",
+      route: "/panic",
+      icon: <Bomb className="h-5 w-5" />,
     },
   ];
 
